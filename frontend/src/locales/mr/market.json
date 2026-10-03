@@ -1,0 +1,74 @@
+{
+  "title": "पीक विक्री व बाजार",
+  "available": "{{quantity}} क्विंटल उपलब्ध",
+  "best_practical": "सर्वोत्तम व्यावहारिक पर्याय",
+  "highest_price": "सर्वात जास्त भाव",
+  "not_always_best": "सर्वात जास्त भाव = नेहमीच सर्वोत्तम निर्णय नाही",
+  "card": {
+    "price": "बाजारभाव",
+    "distance": "अंतर",
+    "transport": "वाहतूक खर्च",
+    "commission": "कमिशन / दलाली",
+    "loading": "हमाली / तोलाई",
+    "storage": "गोदाम खर्च",
+    "wastage": "अपेक्षित घट",
+    "net_return": "अंदाजे निव्वळ परतावा",
+    "risk": "जोखीम",
+    "demand": "मागणी",
+    "why_this": "हीच बाजारपेठ का?"
+  },
+  "comparison": {
+    "title": "बाजारपेठ तुलना",
+    "compare": "बाजारभावाची तुलना करा"
+  },
+  "partial": {
+    "title": "किसानIQ शिफारस",
+    "sell_now": "आता विका",
+    "hold": "राखून ठेवा",
+    "see_calculation": "नफ्याचे गणित पहा",
+    "reason_attractive": "सध्याचा भाव चांगला आहे, परंतु पुढील भावात अनिश्चितता असू शकते."
+  },
+  "trend": {
+    "up": "दर वाढत आहेत",
+    "down": "दर कमी होत आहेत",
+    "stable": "दर स्थिर आहेत"
+  },
+  "demand_levels": {
+    "high": "जास्त",
+    "medium": "मध्यम",
+    "low": "कमी"
+  },
+  "tabs": {
+    "mandi": "🏛️ कृषी उत्पन्न बाजार समिती (मंडी)",
+    "direct_selling": "🤝 थेट खरेदीदार विक्री"
+  },
+  "direct": {
+    "banner_title": "शेतकरी ते खरेदीदार थेट विक्री",
+    "banner_desc": "दलालांशिवाय थेट प्रमाणित खरेदीदार, प्रक्रियादार आणि कंपन्यांना आपला शेतमाल विका.",
+    "btn_add_listing": "+ नवीन शेतमाल विक्री नोंदणी",
+    "my_listings_title": "माझ्या विक्री नोंदणी",
+    "empty_listings_title": "अजून कोणतीही नोंदणी नाही",
+    "empty_listings_desc": "आपल्या शेतमालाची नोंदणी करा जेणेकरून खरेदीदार थेट संपर्क साधू शकतील.",
+    "empty_listings_cta": "+ पहिले पीक नोंदवा",
+    "col_quantity": "उपलब्ध प्रमाण",
+    "col_price": "अपेक्षित दर",
+    "col_grade": "प्रत (Grade)",
+    "btn_remove": "काढून टाका",
+    "incoming_orders_title": "प्राप्त खरेदीदार ऑर्डर्स",
+    "empty_orders_desc": "खरेदीदाराने मागणी नोंदवताच ती येथे दिसेल.",
+    "label_delivery_address": "डिलिव्हरी पत्ता",
+    "label_tracking": "ट्रॅकिंग क्रमांक",
+    "btn_accept_order": "ऑर्डर स्वीकारा",
+    "btn_mark_in_transit": "गाडी रवाना झाली",
+    "btn_mark_delivered": "माल पोहोचवला",
+    "logistics_title": "वाहतूक व पुरवठा ट्रॅकिंग",
+    "modal_add_title": "शेतमाल विक्री नोंदणी करा",
+    "field_crop": "पिकाचे नाव",
+    "field_variety": "वाण / जात",
+    "field_quantity": "प्रमाण (क्विंटलमध्ये)",
+    "field_price": "अपेक्षित दर (₹/क्विंटल)",
+    "field_grade": "प्रत / दर्जा",
+    "field_description": "तपशील / टीप (पर्यायी)",
+    "btn_publish": "नोंदणी प्रसिद्ध करा"
+  }
+}

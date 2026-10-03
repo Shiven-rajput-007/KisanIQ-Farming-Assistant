@@ -1,0 +1,19 @@
+{
+  "title": "Risk Assessment",
+  "overall": "Overall Risk",
+  "risk_index": "Risk Index",
+  "your_crop": "Your Crop",
+  "categories": {
+    "weather": "Weather",
+    "crop_health": "Crop Health",
+    "market": "Market",
+    "water": "Water",
+    "pest": "Pest",
+    "nutrient": "Nutrient"
+  },
+  "attention": {
+    "title": "Attention Required",
+    "humidity_warning": "Disease risk may increase due to rising humidity.",
+    "action_inspect": "Inspect your crop."
+  }
+}

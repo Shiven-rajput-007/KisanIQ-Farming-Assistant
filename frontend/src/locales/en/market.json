@@ -1,0 +1,74 @@
+{
+  "title": "Sell Crop",
+  "available": "{{quantity}} quintal available",
+  "best_practical": "Best Practical Option",
+  "highest_price": "Highest Price",
+  "not_always_best": "Highest price ≠ Best decision",
+  "card": {
+    "price": "Price",
+    "distance": "Distance",
+    "transport": "Transport Cost",
+    "commission": "Commission",
+    "loading": "Loading/Unloading",
+    "storage": "Storage Cost",
+    "wastage": "Expected Wastage",
+    "net_return": "Estimated Net Return",
+    "risk": "Risk",
+    "demand": "Demand",
+    "why_this": "Why this market?"
+  },
+  "comparison": {
+    "title": "Market Comparison",
+    "compare": "Compare Markets"
+  },
+  "partial": {
+    "title": "KisanIQ Suggests",
+    "sell_now": "SELL NOW",
+    "hold": "HOLD",
+    "see_calculation": "See calculation",
+    "reason_attractive": "Current price is attractive, but future price uncertainty is high."
+  },
+  "trend": {
+    "up": "Prices going up",
+    "down": "Prices going down",
+    "stable": "Prices stable"
+  },
+  "demand_levels": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "tabs": {
+    "mandi": "🏛️ Mandi Intelligence",
+    "direct_selling": "🤝 Direct Buyer Selling"
+  },
+  "direct": {
+    "banner_title": "Direct Farmer-to-Buyer Selling",
+    "banner_desc": "Sell your harvest directly to verified buyers, food processors, and FPOs without middlemen.",
+    "btn_add_listing": "+ List New Harvest",
+    "my_listings_title": "My Published Harvest Listings",
+    "empty_listings_title": "No crops listed yet",
+    "empty_listings_desc": "List your harvest so verified buyers can view details and order directly.",
+    "empty_listings_cta": "+ List First Crop",
+    "col_quantity": "Available Quantity",
+    "col_price": "Asking Price",
+    "col_grade": "Quality Grade",
+    "btn_remove": "Remove",
+    "incoming_orders_title": "Received Buyer Orders",
+    "empty_orders_desc": "As soon as a buyer orders from your listings, it will appear here.",
+    "label_delivery_address": "Delivery Address",
+    "label_tracking": "Tracking Code",
+    "btn_accept_order": "Accept Order",
+    "btn_mark_in_transit": "Mark Dispatched",
+    "btn_mark_delivered": "Mark Delivered",
+    "logistics_title": "Active Logistics & Shipments",
+    "modal_add_title": "Publish Crop Listing",
+    "field_crop": "Crop Name",
+    "field_variety": "Variety",
+    "field_quantity": "Quantity (Quintals)",
+    "field_price": "Price (₹/Quintal)",
+    "field_grade": "Quality Grade",
+    "field_description": "Description (Optional)",
+    "btn_publish": "Publish Listing"
+  }
+}

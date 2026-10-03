@@ -1,0 +1,19 @@
+{
+  "title": "जोखिम मूल्यांकन",
+  "overall": "कुल जोखिम",
+  "risk_index": "जोखिम सूचकांक",
+  "your_crop": "आपकी फसल",
+  "categories": {
+    "weather": "मौसम",
+    "crop_health": "फसल स्वास्थ्य",
+    "market": "बाजार",
+    "water": "पानी",
+    "pest": "कीट",
+    "nutrient": "पोषक तत्व"
+  },
+  "attention": {
+    "title": "ध्यान दें",
+    "humidity_warning": "नमी बढ़ने की वजह से बीमारी का खतरा बढ़ सकता है।",
+    "action_inspect": "फसल की जाँच करें।"
+  }
+}

@@ -1,0 +1,60 @@
+name: Daily Mandi Price Sync
+
+on:
+  schedule:
+    # Runs daily at 18:30 IST (13:00 UTC), after APMC mandi trading and settlement finish
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+    inputs:
+      state:
+        description: 'Optional State filter (e.g. Madhya Pradesh, Maharashtra)'
+        required: false
+        default: ''
+      commodity:
+        description: 'Optional Commodity filter (e.g. Wheat, Mustard, Soybean)'
+        required: false
+        default: ''
+
+jobs:
+  sync-mandi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Trigger Mandi Sync on Production Backend
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          MANDI_SYNC_SECRET: ${{ secrets.MANDI_SYNC_SECRET }}
+        run: |
+          if [ -z "$BACKEND_URL" ] || [ -z "$MANDI_SYNC_SECRET" ]; then
+            echo "::error::Required secrets BACKEND_URL or MANDI_SYNC_SECRET are missing."
+            exit 1
+          fi
+
+          echo "Initiating secured mandi sync request to $BACKEND_URL/api/market/sync..."
+          
+          HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$BACKEND_URL/api/market/sync" \
+            -H "Content-Type: application/json" \
+            -H "x-sync-secret: $MANDI_SYNC_SECRET" \
+            --data '{"source": "github_actions", "state": "${{ inputs.state }}", "commodity": "${{ inputs.commodity }}"}')
+
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+
+          echo "Response HTTP Status: $HTTP_STATUS"
+          echo "Response Body: $HTTP_BODY"
+
+          if [ "$HTTP_STATUS" -ne 200 ] && [ "$HTTP_STATUS" -ne 201 ]; then
+            echo "::error::Mandi sync failed with status $HTTP_STATUS: $HTTP_BODY"
+            exit 1
+          fi
+
+          echo "✅ Mandi sync completed successfully."

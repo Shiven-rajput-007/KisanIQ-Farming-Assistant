@@ -1,0 +1,90 @@
+{
+  "title": "मिट्टी परीक्षण और स्वास्थ्य",
+  "subtitle": "मान्यता प्राप्त प्रयोगशालाएं, नमूना ट्रैकिंग और उर्वरक सलाह",
+  "nav_label": "मिट्टी परीक्षण",
+  "tabs": {
+    "overview": "मिट्टी रिपोर्ट (Overview)",
+    "new_request": "नया टेस्ट बुक करें",
+    "tracking": "नमूना ट्रैकिंग",
+    "labs": "मान्यता प्राप्त लैब",
+    "history": "इतिहास और रुझान"
+  },
+  "badges": {
+    "verified_lab": "प्रमाणित लैब टेस्ट (VERIFIED LAB DATA)",
+    "manual_kit": "मैन्युअल किट टेस्ट (FIELD KIT)",
+    "demo_sensor": "डेमो सेंसर डेटा (DEMO SENSOR DATA)"
+  },
+  "indicators": {
+    "ph": "मिट्टी का pH मान",
+    "ec": "विद्युत चालकता (EC)",
+    "organic_carbon": "जैविक कार्बन (OC)",
+    "nitrogen": "उपलब्ध नाइट्रोजन (N)",
+    "phosphorus": "उपलब्ध फास्फोरस (P)",
+    "potassium": "उपलब्ध पोटाश (K)",
+    "moisture": "मिट्टी में नमी"
+  },
+  "status": {
+    "low": "कम (Deficient)",
+    "optimal": "उत्तम / संतुलित (Optimal)",
+    "high": "अधिक (Excess)"
+  },
+  "tracking_stages": {
+    "REQUESTED": "अनुरोध दर्ज",
+    "SAMPLE_PENDING": "नमूना संग्रह लंबित",
+    "SAMPLE_SUBMITTED": "नमूना लैब को भेजा गया",
+    "RECEIVED_BY_LAB": "लैब में नमूना प्राप्त",
+    "TESTING": "जांच जारी है",
+    "REPORT_READY": "रिपोर्ट तैयार",
+    "COMPLETED": "पूर्ण एवं सत्यापित"
+  },
+  "form": {
+    "title": "मिट्टी परीक्षण आवेदन फॉर्म",
+    "desc": "मान्यता प्राप्त लैब चुनें, खेत का विवरण भरें और ऑनलाइन नमूना जांच बुक करें।",
+    "select_crop": "लक्षित फसल चुनें",
+    "select_lab": "मान्यता प्राप्त प्रयोगशाला चुनें",
+    "testing_mode": "परीक्षण का प्रकार",
+    "mode_lab": "आधिकारिक लैब परीक्षण (Official Lab)",
+    "mode_kit": "मैन्युअल फील्ड किट परीक्षण",
+    "mode_sensor": "आईओटी सेंसर (Demo Sensor)",
+    "test_types": "आवश्यक जांच",
+    "test_npk": "मुख्य पोषक तत्व (N-P-K)",
+    "test_ph_ec": "pH और लवणता (pH & EC)",
+    "test_oc": "जैविक कार्बन (OC)",
+    "test_micro": "सूक्ष्म पोषक तत्व (Zinc, Iron, Boron)",
+    "tracking_notes": "विशेष निर्देश",
+    "submit_btn": "टेस्ट बुक करें",
+    "submitting": "बुक हो रहा है...",
+    "success_title": "टेस्ट सफलतापूर्वक बुक हुआ!",
+    "success_desc": "नमूना संख्या तैयार हो गई है। आप ट्रैकिंग सेक्शन में स्थिति देख सकते हैं।"
+  },
+  "overview": {
+    "latest_report_title": "नवीनतम सत्यापित मिट्टी स्वास्थ्य रिपोर्ट",
+    "lab_name": "प्रयोगशाला",
+    "test_date": "परीक्षण तिथि",
+    "sample_id": "नमूना संख्या",
+    "overall_health": "समग्र स्वास्थ्य",
+    "crop_calibrated": "फसल आधारित मूल्यांकन",
+    "recommendations_title": "कृषि वैज्ञानिक सलाह एवं उर्वरक योजना",
+    "deficiencies_title": "मुख्य कमियां",
+    "no_deficiency": "कोई गंभीर कमी नहीं है। मिट्टी का स्वास्थ्य संतुलित है।",
+    "download_pdf": "आधिकारिक रिपोर्ट डाउनलोड करें (PDF)",
+    "view_pdf": "रिपोर्ट देखें"
+  },
+  "labs": {
+    "title": "मान्यता प्राप्त मिट्टी परीक्षण प्रयोगशालाएं",
+    "search_placeholder": "जिला या लैब का नाम खोजें...",
+    "turnaround": "रिपोर्ट अवधि",
+    "days": "{{count}} दिन",
+    "accreditation": "प्रमाणपत्र",
+    "contact": "संपर्क",
+    "book_with_lab": "इस लैब में टेस्ट बुक करें"
+  },
+  "history": {
+    "title": "मिट्टी स्वास्थ्य रुझान (Historical Trends)",
+    "desc": "पिछले मौसमों के दौरान नाइट्रोजन, फास्फोरस, पोटाश और pH के स्तर में बदलाव देखें।",
+    "chart_nitrogen": "नाइट्रोजन (N) रुझान",
+    "chart_phosphorus": "फास्फोरस (P) रुझान",
+    "chart_potassium": "पोटाश (K) रुझान",
+    "chart_ph": "pH स्तर रुझान"
+  }
+}

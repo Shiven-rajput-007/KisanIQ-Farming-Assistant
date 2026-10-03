@@ -1,0 +1,81 @@
+{
+  "app_name": "KisanIQ",
+  "greeting": "Namaste, {{name}} ji",
+  "greeting_emoji": "👋",
+  "location_prefix": "📍",
+  "nav": {
+    "home": "முகப்பு",
+    "meri_fasal": "என் பயிர்",
+    "bechein": "விற்கவும்",
+    "madad": "உதவி"
+  },
+  "buttons": {
+    "why": "ஏன்?",
+    "details": "விவரங்கள்",
+    "compare": "Compare",
+    "retry": "மீண்டும் முயற்சி",
+    "save": "சேமி",
+    "continue": "தொடரவும்",
+    "back": "பின்",
+    "submit": "சமர்ப்பி",
+    "cancel": "ரத்து",
+    "change": "Change",
+    "add": "Add",
+    "view_all": "View All",
+    "learn_more": "Learn More"
+  },
+  "status": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical",
+    "good": "Good",
+    "recommended": "Recommended",
+    "consider": "Consider",
+    "caution": "Caution",
+    "avoid": "Avoid"
+  },
+  "time": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "just_now": "Just now",
+    "min_ago": "{{count}} min ago",
+    "hours_ago": "{{count}}h ago",
+    "days_ago": "{{count}}d ago",
+    "last_updated": "Last updated: {{time}}"
+  },
+  "states": {
+    "loading": "Loading...",
+    "error_title": "Something went wrong",
+    "error_description": "Unable to load this information right now.",
+    "offline_title": "You are offline",
+    "offline_description": "Showing last available information.",
+    "empty_title": "Nothing here yet",
+    "demo_label": "Demo Data"
+  },
+  "language": {
+    "title": "Choose Language",
+    "change": "Change Language",
+    "current": "Current"
+  },
+  "units": {
+    "per_quintal": "/q",
+    "quintal": "quintal",
+    "acres": "acres",
+    "km": "km",
+    "kmph": "km/h",
+    "mm": "mm",
+    "days": "days",
+    "days_old": "{{count}} days old"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "no_notifications": "No new notifications"
+  },
+  "profile": {
+    "title": "Profile",
+    "farm_details": "Farm Details",
+    "settings": "Settings"
+  }
+}

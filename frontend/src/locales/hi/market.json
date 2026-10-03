@@ -1,0 +1,74 @@
+{
+  "title": "फसल बेचें",
+  "available": "{{quantity}} क्विंटल उपलब्ध",
+  "best_practical": "सबसे बेहतर व्यावहारिक विकल्प",
+  "highest_price": "सबसे ऊँचा भाव",
+  "not_always_best": "सबसे ऊँचा भाव = सबसे अच्छा फैसला नहीं",
+  "card": {
+    "price": "भाव",
+    "distance": "दूरी",
+    "transport": "परिवहन लागत",
+    "commission": "कमीशन",
+    "loading": "लोडिंग/अनलोडिंग",
+    "storage": "भंडारण लागत",
+    "wastage": "अनुमानित नुकसान",
+    "net_return": "अनुमानित शुद्ध रिटर्न",
+    "risk": "जोखिम",
+    "demand": "माँग",
+    "why_this": "यह मंडी क्यों?"
+  },
+  "comparison": {
+    "title": "मंडी तुलना",
+    "compare": "मंडी तुलना करें"
+  },
+  "partial": {
+    "title": "किसानIQ का सुझाव",
+    "sell_now": "अभी बेचें",
+    "hold": "रोकें",
+    "see_calculation": "गणना देखें",
+    "reason_attractive": "अभी का भाव अच्छा है, लेकिन आगे के भाव में अनिश्चितता है।"
+  },
+  "trend": {
+    "up": "भाव बढ़ रहे हैं",
+    "down": "भाव गिर रहे हैं",
+    "stable": "भाव स्थिर हैं"
+  },
+  "demand_levels": {
+    "high": "अधिक",
+    "medium": "मध्यम",
+    "low": "कम"
+  },
+  "tabs": {
+    "mandi": "🏛️ मंडी भाव एवं विश्लेषण",
+    "direct_selling": "🤝 खरीदारों को सीधे बेचें"
+  },
+  "direct": {
+    "banner_title": "व्यापारियों को सीधे बेचें",
+    "banner_desc": "अपनी फसल को बिना बिचौलियों के सीधे सत्यापित खरीदारों, फूड प्रोसेसर्स व FPO को मनचाहे भाव पर बेचें।",
+    "btn_add_listing": "+ नई फसल लिस्ट करें",
+    "my_listings_title": "मेरी लिस्ट की गई फसलें",
+    "empty_listings_title": "अभी कोई फसल लिस्ट नहीं की गई",
+    "empty_listings_desc": "अपनी फसल को लिस्ट करें ताकि पूरे राज्य के खरीदार सीधे आपसे संपर्क कर सकें।",
+    "empty_listings_cta": "+ पहली फसल लिस्ट करें",
+    "col_quantity": "उपलब्ध मात्रा",
+    "col_price": "मांगी गई दर",
+    "col_grade": "गुणवत्ता श्रेणी",
+    "btn_remove": "हटाएं",
+    "incoming_orders_title": "खरीदारों से प्राप्त ऑर्डर",
+    "empty_orders_desc": "जैसे ही कोई खरीदार आपकी लिस्टिंग से ऑर्डर करेगा, वह यहाँ दिखेगा।",
+    "label_delivery_address": "डिलीवरी पता",
+    "label_tracking": "ट्रैकिंग कोड",
+    "btn_accept_order": "ऑर्डर स्वीकार करें",
+    "btn_mark_in_transit": "वाहन रवाना हुआ",
+    "btn_mark_delivered": "डिलीवरी पूर्ण",
+    "logistics_title": "सक्रिय वाहन एवं डिलीवरी",
+    "modal_add_title": "फसल लिस्ट करें",
+    "field_crop": "फसल का नाम",
+    "field_variety": "किस्म",
+    "field_quantity": "मात्रा (क्विंटल)",
+    "field_price": "भाव दर (₹/क्विंटल)",
+    "field_grade": "गुणवत्ता श्रेणी",
+    "field_description": "विवरण (वैकल्पिक)",
+    "btn_publish": "फसल प्रकाशित करें"
+  }
+}

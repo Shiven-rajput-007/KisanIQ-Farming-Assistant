@@ -1,0 +1,90 @@
+{
+  "title": "Soil Testing & Health",
+  "subtitle": "Accredited Labs, Sample Tracking & Soil Intelligence",
+  "nav_label": "Soil Testing",
+  "tabs": {
+    "overview": "Report & Overview",
+    "new_request": "Book Lab Test",
+    "tracking": "Sample Tracking",
+    "labs": "Accredited Labs",
+    "history": "History & Trends"
+  },
+  "badges": {
+    "verified_lab": "VERIFIED LAB DATA",
+    "manual_kit": "FIELD TEST KIT",
+    "demo_sensor": "DEMO SENSOR DATA"
+  },
+  "indicators": {
+    "ph": "Soil pH",
+    "ec": "Electrical Conductivity (EC)",
+    "organic_carbon": "Organic Carbon (OC)",
+    "nitrogen": "Available Nitrogen (N)",
+    "phosphorus": "Available Phosphorus (P)",
+    "potassium": "Available Potassium (K)",
+    "moisture": "Soil Moisture"
+  },
+  "status": {
+    "low": "Deficient / Low",
+    "optimal": "Optimal / Good",
+    "high": "High / Excess"
+  },
+  "tracking_stages": {
+    "REQUESTED": "Request Submitted",
+    "SAMPLE_PENDING": "Sample Collection Pending",
+    "SAMPLE_SUBMITTED": "Sample Handed Over",
+    "RECEIVED_BY_LAB": "Received by Laboratory",
+    "TESTING": "Testing in Progress",
+    "REPORT_READY": "Report Ready",
+    "COMPLETED": "Completed & Verified"
+  },
+  "form": {
+    "title": "Soil Test Request Form",
+    "desc": "Select an accredited laboratory, provide field details, and book sample collection.",
+    "select_crop": "Select Target Crop",
+    "select_lab": "Select Accredited Laboratory",
+    "testing_mode": "Testing Mode",
+    "mode_lab": "Official Accredited Lab Test",
+    "mode_kit": "Manual Field Test Kit",
+    "mode_sensor": "IoT Sensor (Demo)",
+    "test_types": "Required Test Parameters",
+    "test_npk": "Primary Nutrients (N-P-K)",
+    "test_ph_ec": "pH & Salinity (EC)",
+    "test_oc": "Organic Carbon (OC)",
+    "test_micro": "Micronutrients (Zinc, Iron, Boron)",
+    "tracking_notes": "Special Instructions / Notes",
+    "submit_btn": "Submit Test Request",
+    "submitting": "Submitting...",
+    "success_title": "Test Successfully Booked!",
+    "success_desc": "Sample ID has been generated. You can monitor the progress in Sample Tracking."
+  },
+  "overview": {
+    "latest_report_title": "Latest Verified Soil Health Report",
+    "lab_name": "Laboratory",
+    "test_date": "Test Date",
+    "sample_id": "Sample ID",
+    "overall_health": "Overall Health Rating",
+    "crop_calibrated": "Crop Calibrated Evaluation",
+    "recommendations_title": "Agronomist Advice & Fertilizer Plan",
+    "deficiencies_title": "Identified Deficiencies",
+    "no_deficiency": "No critical deficiencies identified. Soil is in optimal balance.",
+    "download_pdf": "Download Official Report (PDF)",
+    "view_pdf": "View Report"
+  },
+  "labs": {
+    "title": "Directory of Accredited Soil Testing Laboratories",
+    "search_placeholder": "Search by district or laboratory name...",
+    "turnaround": "Expected Turnaround",
+    "days": "{{count}} days",
+    "accreditation": "Accreditation",
+    "contact": "Contact",
+    "book_with_lab": "Book Test With Lab"
+  },
+  "history": {
+    "title": "Historical Soil Health Trends",
+    "desc": "Track changes in Nitrogen, Phosphorus, Potassium, and pH across previous seasons.",
+    "chart_nitrogen": "Nitrogen (N) Trend",
+    "chart_phosphorus": "Phosphorus (P) Trend",
+    "chart_potassium": "Potassium (K) Trend",
+    "chart_ph": "pH Trend"
+  }
+}

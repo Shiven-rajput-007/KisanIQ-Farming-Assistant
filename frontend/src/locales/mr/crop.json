@@ -1,0 +1,49 @@
+{
+  "title": "माझे पीक",
+  "health": {
+    "title": "पिकाचे आरोग्य",
+    "overall": "एकूण स्थिती",
+    "weather_risk": "हवामान धोका",
+    "disease_risk": "रोगराई धोका",
+    "water_status": "पाणी स्थिती",
+    "nutrient_status": "अन्नद्रव्य स्थिती"
+  },
+  "stages": {
+    "land_preparation": "जमीन मशागत",
+    "sowing": "पेरणी / लागवड",
+    "germination": "उगवण",
+    "vegetative": "शाकीय वाढ",
+    "flowering": "फुलोरा अवस्था",
+    "grain_filling": "दाणे भरणे",
+    "maturity": "पक्वता अवस्था",
+    "harvest": "काढणी"
+  },
+  "timeline_title": "पीक वाढीची समयरेषा",
+  "actions_title": "पीक व्यवस्थापन कामे",
+  "crop_actions": {
+    "water": "सिंचन",
+    "weather": "हवामान",
+    "health": "आरोग्य",
+    "fertilizer": "खत व्यवस्थापन",
+    "irrigation": "पाणी व्यवस्थापन",
+    "inspection": "पीक पाहणी",
+    "general": "सर्वसाधारण सल्ला"
+  },
+  "empty": {
+    "title": "अजून कोणतेही पीक जोडलेले नाही",
+    "description": "सल्ला आणि मार्गदर्शनासाठी तुमचे पहिले पीक जोडा.",
+    "cta": "+ पीक जोडा"
+  },
+  "crops": {
+    "wheat": "गहू",
+    "rice": "भात / तांदूळ",
+    "cotton": "कापूस",
+    "sugarcane": "ऊस",
+    "maize": "मका",
+    "soybean": "सोयाबीन",
+    "mustard": "मोहरी",
+    "potato": "बटाटा",
+    "onion": "कांदा",
+    "tomato": "टोमॅटो"
+  }
+}

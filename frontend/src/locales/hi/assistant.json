@@ -1,0 +1,16 @@
+{
+  "title": "किसानIQ से पूछें",
+  "subtitle": "अपनी फसल, मौसम या मंडी के बारे में पूछें।",
+  "voice_button": "बोलकर पूछें",
+  "input_placeholder": "अपना सवाल लिखें...",
+  "quick_questions": {
+    "rain_tomorrow": "कल बारिश होगी?",
+    "when_water": "पानी कब दें?",
+    "crop_health": "मेरी फसल कैसी है?",
+    "crop_problem": "फसल में समस्या है?",
+    "when_sell": "फसल कब बेचें?",
+    "next_crop": "अगली फसल क्या लगाएँ?"
+  },
+  "coming_soon": "जल्द आ रहा है",
+  "voice_coming_soon": "वॉइस इनपुट जल्द उपलब्ध होगा।"
+}

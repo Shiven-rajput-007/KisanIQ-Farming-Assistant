@@ -1,0 +1,51 @@
+{
+  "title": "प्रोफाईल",
+  "farm_profile": "शेतकरी प्रोफाईल",
+  "fields": {
+    "name": "नाव",
+    "phone": "मोबाईल नंबर",
+    "location": "स्थान / जिल्हा",
+    "farm_size": "शेतीचे क्षेत्र (एकर)",
+    "soil_type": "मातीचा प्रकार",
+    "irrigation": "सिंचनाचा स्रोत",
+    "main_crop": "मुख्य पीक",
+    "language": "पसंतीची भाषा"
+  },
+  "soil_types": {
+    "alluvial": "गाळाची माती",
+    "black": "काळी कसदार माती (रेगूर)",
+    "red": "तांबडी माती",
+    "laterite": "जांभी माती",
+    "sandy": "वालुकामय माती",
+    "clayey": "चिकनमाती",
+    "loamy": "दुमट माती"
+  },
+  "irrigation_types": {
+    "canal": "कालवा",
+    "borewell": "बोअरवेल",
+    "well": "विहीर",
+    "drip": "ठिबक सिंचन",
+    "sprinkler": "तुषार सिंचन",
+    "rainfed": "कोरडवाहू (पावसावर अवलंबून)",
+    "river": "नदी उपसा"
+  },
+  "settings": {
+    "title": "सेटिंग्ज",
+    "notifications": "सूचना (Notifications)",
+    "language": "भाषा बदला",
+    "about": "KisanIQ बद्दल"
+  },
+  "onboarding": {
+    "welcome": "KisanIQ मध्ये आपले स्वागत आहे",
+    "step_name": "आपले पूर्ण नाव",
+    "step_location": "आपला जिल्हा किंवा गाव",
+    "step_farm_size": "शेताचा आकार (एकर)",
+    "step_crop": "आपले मुख्य पीक",
+    "step_soil": "शेतातील मातीचा प्रकार",
+    "step_irrigation": "पाणी पुरवठा / सिंचन साधन",
+    "step_language": "अ‍ॅपची भाषा निवडा",
+    "step_of": "टप्पा {{current}} / {{total}}",
+    "get_started": "सुरू करा",
+    "skip": "नंतर करा"
+  }
+}

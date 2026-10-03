@@ -1,0 +1,546 @@
+// KisanIQ Prisma Schema
+// Defines relational database models matching the production full-stack schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String         @id @default(cuid())
+  phone        String         @unique
+  passwordHash String         @map("password_hash")
+  name         String
+  role         String         @default("farmer") // farmer | buyer | admin
+  email        String?
+  address      String?
+  city         String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  farmers      Farmer[]
+  buyerProfile BuyerProfile?
+  ordersPlaced MarketplaceOrder[] @relation("BuyerOrders")
+
+  @@map("users")
+}
+
+model Farmer {
+  id                String       @id @default(cuid())
+  userId            String?      @map("user_id")
+  user              User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  phone             String?
+  email             String?
+  village           String?
+  district          String       @default("Gwalior")
+  state             String       @default("Madhya Pradesh")
+  pincode           String?
+  latitude          Decimal?     @db.Decimal(9, 6)
+  longitude         Decimal?     @db.Decimal(9, 6)
+  preferredLanguage String       @default("hi") @map("preferred_language")
+  profileComplete   Boolean      @default(true) @map("profile_complete")
+  address           String?
+  city              String?
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  farms             Farm[]
+  crops             Crop[]
+  recommendations   Recommendation[]
+  alerts            Alert[]
+  notifications     Notification[]
+  chatMessages      ChatMessage[]
+  orders            Order[]
+  cropListings      CropListing[]
+  marketplaceOrders MarketplaceOrder[] @relation("FarmerMarketplaceOrders")
+  soilTestRequests  SoilTestRequest[]
+  soilReports       SoilReport[]
+
+  @@index([userId])
+  @@map("farmers")
+}
+
+model Farm {
+  id               String   @id @default(cuid())
+  farmerId         String   @map("farmer_id")
+  farmer           Farmer   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  totalArea        Decimal  @default(5.0) @map("total_area") @db.Decimal(6, 2)
+  soilType         String   @default("alluvial") @map("soil_type")
+  irrigationSource String   @default("borewell") @map("irrigation_source")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  fields           Field[]
+
+  @@map("farms")
+}
+
+model Field {
+  id                 String              @id @default(cuid())
+  farmId             String              @map("farm_id")
+  farm               Farm                @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  name               String
+  area               Decimal             @default(3.0) @db.Decimal(6, 2)
+  soilType           String?             @default("alluvial") @map("soil_type")
+  irrigationType     String?             @default("borewell") @map("irrigation_type")
+  createdAt          DateTime            @default(now()) @map("created_at")
+
+  crops              Crop[]
+  sensorReadings     SoilSensorReading[]
+
+  @@map("fields")
+}
+
+model Crop {
+  id                  String       @id @default(cuid())
+  farmerId            String       @map("farmer_id")
+  farmer              Farmer       @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  fieldId             String?      @map("field_id")
+  field               Field?       @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+  name                String       @default("Wheat")
+  nameKey             String       @default("wheat") @map("name_key")
+  variety             String?      @default("HD-2967")
+  sowingDate          DateTime     @map("sowing_date")
+  expectedHarvestDate DateTime     @map("expected_harvest_date")
+  currentStage        String       @default("flowering") @map("current_stage")
+  daysOld             Int          @default(85) @map("days_old")
+  healthOverall       String       @default("low") @map("health_overall")
+  healthWeatherRisk   String       @default("low") @map("health_weather_risk")
+  healthDiseaseRisk   String       @default("medium") @map("health_disease_risk")
+  healthWaterStatus   String       @default("low") @map("health_water_status")
+  area                Decimal      @default(5.0) @db.Decimal(6, 2)
+  expectedYield       Decimal?     @default(100.0) @map("expected_yield") @db.Decimal(8, 2)
+  icon                String       @default("🌾")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  stages              CropStage[]
+  actions             CropAction[]
+
+  @@index([farmerId])
+  @@map("crops")
+}
+
+model CropStage {
+  id            String  @id @default(cuid())
+  cropId        String  @map("crop_id")
+  crop          Crop    @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  stage         String
+  nameKey       String  @map("name_key")
+  completed     Boolean @default(false)
+  active        Boolean @default(false)
+  sequenceOrder Int     @map("sequence_order")
+
+  @@map("crop_stages")
+}
+
+model CropAction {
+  id             String   @id @default(cuid())
+  cropId         String   @map("crop_id")
+  crop           Crop     @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  actionType     String   @map("action_type")
+  titleKey       String   @map("title_key")
+  descriptionKey String   @map("description_key")
+  priority       String   @default("medium")
+  icon           String   @default("💧")
+  completed      Boolean  @default(false)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("crop_actions")
+}
+
+model Market {
+  id                 String        @id @default(cuid())
+  name               String
+  location           String
+  state              String        @default("Madhya Pradesh")
+  district           String        @default("Gwalior")
+  latitude           Decimal?      @default(26.220000) @db.Decimal(9, 6)
+  longitude          Decimal?      @default(78.180000) @db.Decimal(9, 6)
+  distanceKm         Decimal       @default(15.0) @map("distance_km") @db.Decimal(6, 2)
+  commissionRate     Decimal       @default(2.5) @map("commission_rate") @db.Decimal(4, 2)
+  loadingCost        Decimal       @default(500.0) @map("loading_cost") @db.Decimal(8, 2)
+  storageCost        Decimal       @default(0.0) @map("storage_cost") @db.Decimal(8, 2)
+  expectedWastage    Decimal       @default(1.0) @map("expected_wastage") @db.Decimal(4, 2)
+  isRecommended      Boolean       @default(false) @map("is_recommended")
+  recommendationRank Int?          @default(1) @map("recommendation_rank")
+  createdAt          DateTime      @default(now()) @map("created_at")
+
+  prices             MarketPrice[]
+  orders             Order[]
+
+  @@map("markets")
+}
+
+model MarketPrice {
+  id               String    @id @default(cuid())
+  marketId         String?   @map("market_id")
+  market           Market?   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  state            String?
+  district         String?
+  marketName       String?   @map("market_name")
+  commodity        String?
+  variety          String?
+  grade            String?
+  arrivalDate      DateTime? @map("arrival_date")
+  cropName         String    @default("Wheat") @map("crop_name")
+  pricePerQuintal  Decimal   @map("price_per_quintal") @db.Decimal(10, 2)
+  minPrice         Decimal?  @map("min_price") @db.Decimal(10, 2)
+  maxPrice         Decimal?  @map("max_price") @db.Decimal(10, 2)
+  modalPrice       Decimal?  @map("modal_price") @db.Decimal(10, 2)
+  priceChange      Decimal?  @default(0.0) @map("price_change") @db.Decimal(4, 2)
+  priceTrend       String    @default("stable") @map("price_trend")
+  demand           String    @default("medium")
+  source           String?   @default("Government of India / AGMARKNET")
+  fetchedAt        DateTime? @default(now()) @map("fetched_at")
+  date             DateTime  @default(now())
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@index([state])
+  @@index([district])
+  @@index([marketName])
+  @@index([commodity])
+  @@index([variety])
+  @@index([arrivalDate])
+  @@index([marketId])
+  @@map("market_prices")
+}
+
+model MandiSyncLog {
+  id            String    @id @default(cuid())
+  startedAt     DateTime  @default(now()) @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  status        String    @default("running")
+  source        String    @default("data.gov.in / AGMARKNET")
+  fetchedCount  Int       @default(0) @map("fetched_count")
+  insertedCount Int       @default(0) @map("inserted_count")
+  updatedCount  Int       @default(0) @map("updated_count")
+  rejectedCount Int       @default(0) @map("rejected_count")
+  errorMessage  String?   @map("error_message")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([startedAt])
+  @@map("mandi_sync_logs")
+}
+
+
+model SellingDecision {
+  id                 String   @id @default(cuid())
+  farmerId           String   @map("farmer_id")
+  cropName           String   @map("crop_name")
+  recommendedMarketId String  @map("recommended_market_id")
+  sellNowPct         Int      @map("sell_now_pct")
+  holdPct            Int      @map("hold_pct")
+  estimatedNetReturn Decimal  @map("estimated_net_return") @db.Decimal(10, 2)
+  rationale          String
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@map("selling_decisions")
+}
+
+model Recommendation {
+  id               String    @id @default(cuid())
+  farmerId         String    @map("farmer_id")
+  farmer           Farmer    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  actionCode       String    @map("action_code")
+  category         String
+  icon             String    @default("💧")
+  titleKey         String    @map("title_key")
+  descriptionKey   String    @map("description_key")
+  status           String    @default("recommended")
+  priority         Int       @default(1)
+  riskLevel        String    @default("low") @map("risk_level")
+  timing           String?   @default("today")
+  whySummary       String?   @map("why_summary")
+  whyConclusion    String?   @map("why_conclusion")
+  dataPoints       Json?     @default("[]") @map("data_points")
+  advancedDetails  String?   @map("advanced_details")
+  completed        Boolean   @default(false)
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([farmerId])
+  @@map("recommendations")
+}
+
+model Alert {
+  id             String   @id @default(cuid())
+  farmerId       String   @map("farmer_id")
+  farmer         Farmer   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  severity       String   @default("medium")
+  titleKey       String   @map("title_key")
+  descriptionKey String   @map("description_key")
+  actionKey      String?  @default("details") @map("action_key")
+  icon           String   @default("⚠️")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("alerts")
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  farmerId       String   @map("farmer_id")
+  farmer         Farmer   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  type           String
+  severity       String   @default("info")
+  titleKey       String   @map("title_key")
+  descriptionKey String   @map("description_key")
+  icon           String   @default("🔔")
+  read           Boolean  @default(false)
+  actionUrl      String?  @map("action_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([farmerId])
+  @@map("notifications")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  farmerId  String?  @map("farmer_id")
+  farmer    Farmer?  @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  role      String   // user | assistant
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([farmerId])
+  @@map("chat_messages")
+}
+
+model Vehicle {
+  id               String     @id @default(cuid())
+  vehicleNumber    String     @map("vehicle_number")
+  vehicleType      String     @default("Tractor-Trolley") @map("vehicle_type")
+  capacityQuintals Decimal    @default(80.0) @map("capacity_quintals") @db.Decimal(6, 2)
+  driverName       String     @map("driver_name")
+  driverPhone      String     @map("driver_phone")
+  status           String     @default("available")
+
+  shipments        Shipment[]
+
+  @@map("vehicles")
+}
+
+model Order {
+  id                     String     @id @default(cuid())
+  farmerId               String     @map("farmer_id")
+  farmer                 Farmer     @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  marketId               String     @map("market_id")
+  market                 Market     @relation(fields: [marketId], references: [id], onDelete: Restrict)
+  cropName               String     @map("crop_name")
+  quantityQuintals       Decimal    @map("quantity_quintals") @db.Decimal(8, 2)
+  agreedPricePerQuintal  Decimal    @map("agreed_price_per_quintal") @db.Decimal(8, 2)
+  totalExpectedReturn    Decimal    @map("total_expected_return") @db.Decimal(10, 2)
+  status                 String     @default("confirmed")
+  notes                  String?
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
+
+  shipments              Shipment[]
+
+  @@index([farmerId])
+  @@map("orders")
+}
+
+model Shipment {
+  id                String    @id @default(cuid())
+  orderId           String    @map("order_id")
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vehicleId         String?   @map("vehicle_id")
+  vehicle           Vehicle?  @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  pickupLocation    String    @map("pickup_location")
+  destinationMandi  String    @map("destination_mandi")
+  status            String    @default("scheduled")
+  estimatedDelivery DateTime? @map("estimated_delivery")
+  actualDelivery    DateTime? @map("actual_delivery")
+  trackingCode      String?   @unique @map("tracking_code")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@map("shipments")
+}
+
+model WeatherCache {
+  id               String   @id @default(cuid())
+  latitude         Decimal  @db.Decimal(9, 6)
+  longitude        Decimal  @db.Decimal(9, 6)
+  currentJson      Json     @map("current_json")
+  forecastJson     Json     @map("forecast_json")
+  implicationsJson Json     @map("implications_json")
+  cachedAt         DateTime @default(now()) @map("cached_at")
+
+  @@map("weather_cache")
+}
+
+model BuyerProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName       String?  @map("company_name")
+  buyerType         String?  @default("Trader") @map("buyer_type")
+  gstin             String?
+  address           String?
+  city              String?
+  district          String?  @default("Indore")
+  state             String?  @default("Madhya Pradesh")
+  pincode           String?
+  phone             String?
+  email             String?
+  purchaseInterests String?  @map("purchase_interests")
+  latitude          Decimal? @db.Decimal(9, 6)
+  longitude         Decimal? @db.Decimal(9, 6)
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("buyer_profiles")
+}
+
+model CropListing {
+  id               String             @id @default(cuid())
+  farmerId         String             @map("farmer_id")
+  farmer           Farmer             @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  cropName         String             @map("crop_name")
+  variety          String?
+  quantityQuintals Decimal            @map("quantity_quintals") @db.Decimal(8, 2)
+  pricePerQuintal  Decimal            @map("price_per_quintal") @db.Decimal(8, 2)
+  qualityGrade     String?            @default("Grade A") @map("quality_grade")
+  harvestDate      DateTime?          @map("harvest_date")
+  availableFrom    DateTime?          @default(now()) @map("available_from")
+  location         String?
+  description      String?
+  status           String             @default("active")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  orders           MarketplaceOrder[]
+
+  @@index([farmerId])
+  @@map("crop_listings")
+}
+
+model MarketplaceOrder {
+  id               String       @id @default(cuid())
+  listingId        String?      @map("listing_id")
+  listing          CropListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  buyerId          String       @map("buyer_id")
+  buyer            User         @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  farmerId         String       @map("farmer_id")
+  farmer           Farmer       @relation("FarmerMarketplaceOrders", fields: [farmerId], references: [id], onDelete: Cascade)
+  cropName         String       @map("crop_name")
+  quantityQuintals Decimal      @map("quantity_quintals") @db.Decimal(8, 2)
+  pricePerQuintal  Decimal      @map("price_per_quintal") @db.Decimal(8, 2)
+  totalAmount      Decimal      @map("total_amount") @db.Decimal(10, 2)
+  deliveryAddress  String       @map("delivery_address")
+  buyerName        String?      @map("buyer_name")
+  buyerPhone       String?      @map("buyer_phone")
+  status           String       @default("placed")
+  paymentMethod    String?      @default("Pay on Delivery / Escrow") @map("payment_method")
+  paymentStatus    String?      @default("pending") @map("payment_status")
+  trackingCode     String?      @map("tracking_code")
+  notes            String?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  @@index([buyerId])
+  @@index([farmerId])
+  @@map("marketplace_orders")
+}
+
+model Laboratory {
+  id              String            @id @default(cuid())
+  name            String
+  address         String
+  city            String
+  district        String
+  state           String            @default("Maharashtra")
+  pincode         String?
+  phone           String?
+  email           String?
+  accreditation   String?
+  operatingStatus String            @default("active") @map("operating_status")
+  turnaroundDays  Int               @default(5) @map("turnaround_days")
+  supportedTests  Json              @default("[\"pH\", \"EC\", \"OC\", \"N\", \"P\", \"K\", \"Moisture\"]") @map("supported_tests")
+  isDemo          Boolean           @default(false) @map("is_demo")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  testRequests    SoilTestRequest[]
+  testReports     SoilReport[]
+
+  @@map("laboratories")
+}
+
+model SoilTestRequest {
+  id                   String       @id @default(cuid())
+  farmerId             String       @map("farmer_id")
+  farmer               Farmer       @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  farmId               String?      @map("farm_id")
+  fieldId              String?      @map("field_id")
+  cropName             String       @map("crop_name")
+  labId                String       @map("lab_id")
+  lab                  Laboratory   @relation(fields: [labId], references: [id], onDelete: Restrict)
+  sampleId             String       @unique @map("sample_id")
+  sampleCollectionDate DateTime     @map("sample_collection_date")
+  testTypes            Json         @map("test_types")
+  testingMode          String       @default("LAB_TEST") @map("testing_mode")
+  status               String       @default("REQUESTED")
+  trackingNotes        String?      @map("tracking_notes")
+  isDemo               Boolean      @default(false) @map("is_demo")
+  createdAt            DateTime     @default(now()) @map("created_at")
+  updatedAt            DateTime     @updatedAt @map("updated_at")
+
+  reports              SoilReport[]
+
+  @@index([farmerId])
+  @@map("soil_test_requests")
+}
+
+model SoilReport {
+  id             String          @id @default(cuid())
+  requestId      String?         @map("request_id")
+  request        SoilTestRequest? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  farmerId       String          @map("farmer_id")
+  farmer         Farmer          @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  fieldId        String?         @map("field_id")
+  labId          String          @map("lab_id")
+  lab            Laboratory      @relation(fields: [labId], references: [id], onDelete: Restrict)
+  testDate       DateTime        @map("test_date")
+  cropName       String          @map("crop_name")
+  ph             Decimal         @db.Decimal(4, 2)
+  ec             Decimal         @db.Decimal(5, 3)
+  organicCarbon  Decimal         @map("organic_carbon") @db.Decimal(4, 2)
+  nitrogenKgHa   Decimal         @map("nitrogen_kg_ha") @db.Decimal(6, 2)
+  phosphorusKgHa Decimal         @map("phosphorus_kg_ha") @db.Decimal(6, 2)
+  potassiumKgHa  Decimal         @map("potassium_kg_ha") @db.Decimal(6, 2)
+  moisturePct    Decimal?        @map("moisture_pct") @db.Decimal(4, 1)
+  overallHealth  String          @default("optimal") @map("overall_health")
+  deficiencies   Json?
+  recommendations String?
+  pdfUrl         String?         @map("pdf_url")
+  isDemo         Boolean         @default(false) @map("is_demo")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  @@index([farmerId])
+  @@index([fieldId])
+  @@map("soil_reports")
+}
+
+model SoilSensorReading {
+  id                 String   @id @default(cuid())
+  fieldId            String   @map("field_id")
+  field              Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  sensorId           String   @map("sensor_id")
+  moisturePct        Decimal  @map("moisture_pct") @db.Decimal(4, 1)
+  temperatureCelsius Decimal  @map("temperature_celsius") @db.Decimal(4, 1)
+  ph                 Decimal? @db.Decimal(4, 2)
+  ec                 Decimal? @db.Decimal(5, 3)
+  nitrogenPpm        Decimal? @map("nitrogen_ppm") @db.Decimal(6, 2)
+  isDemo             Boolean  @default(true) @map("is_demo")
+  recordedAt         DateTime @default(now()) @map("recorded_at")
+
+  @@index([fieldId])
+  @@map("soil_sensor_readings")
+}

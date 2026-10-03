@@ -1,0 +1,90 @@
+{
+  "title": "माती परीक्षण व आरोग्य",
+  "subtitle": "अधिकृत प्रयोगशाळा, नमुना ट्रॅकिंग आणि सेंद्रिय खत सल्ला",
+  "nav_label": "माती परीक्षण",
+  "tabs": {
+    "overview": "माती अहवाल (Overview)",
+    "new_request": "नवीन चाचणी नोंदणी",
+    "tracking": "नमुना ट्रॅकिंग",
+    "labs": "मान्यताप्राप्त प्रयोगशाळा",
+    "history": "इतिहास व कल (Trends)"
+  },
+  "badges": {
+    "verified_lab": "अधिकृत प्रयोगशाळा चाचणी (VERIFIED LAB DATA)",
+    "manual_kit": "मॅन्युअल किट चाचणी (FIELD KIT)",
+    "demo_sensor": "डेमो सेन्सर डेटा (DEMO SENSOR DATA)"
+  },
+  "indicators": {
+    "ph": "मातीचा pH (सामू)",
+    "ec": "विद्युत वाहकता (EC)",
+    "organic_carbon": "सेंद्रिय कर्ब (OC)",
+    "nitrogen": "उपलब्ध नत्र / नायट्रोजन (N)",
+    "phosphorus": "उपलब्ध स्फुरद / फॉस्फरस (P)",
+    "potassium": "उपलब्ध पालाश / पोटॅश (K)",
+    "moisture": "मातीतील ओलावा"
+  },
+  "status": {
+    "low": "कमी (Deficient)",
+    "optimal": "योग्य / उत्तम (Optimal)",
+    "high": "जास्त (Excess)"
+  },
+  "tracking_stages": {
+    "REQUESTED": "विनंती नोंदवली",
+    "SAMPLE_PENDING": "नमुना संकलन बाकी",
+    "SAMPLE_SUBMITTED": "नमुना प्रयोगशाळेकडे पाठवला",
+    "RECEIVED_BY_LAB": "लॅबमध्ये नमुना प्राप्त",
+    "TESTING": "चाचणी सुरू आहे",
+    "REPORT_READY": "अहवाल तयार",
+    "COMPLETED": "पूर्ण झाले"
+  },
+  "form": {
+    "title": "माती परीक्षण विनंती अर्ज",
+    "desc": "अधिकृत लॅब निवडा, नमुन्याची माहिती भरा आणि घरपोच संकलन किंवा लॅब जमा पर्याय निवडा.",
+    "select_crop": "मुख्य पीक निवडा",
+    "select_lab": "मान्यताप्राप्त प्रयोगशाळा निवडा",
+    "testing_mode": "परीक्षण पद्धत निवडा",
+    "mode_lab": "अधिकृत प्रयोगशाळा चाचणी (Official Lab)",
+    "mode_kit": "मॅन्युअल किट चाचणी (Soil Kit)",
+    "mode_sensor": "आयओटी सेन्सर (IoT Demo Sensor)",
+    "test_types": "आवश्यक चाचण्या",
+    "test_npk": "मुख्य अन्नद्रव्ये (N-P-K)",
+    "test_ph_ec": "pH व क्षारता (pH & EC)",
+    "test_oc": "सेंद्रिय कर्ब (Organic Carbon)",
+    "test_micro": "सूक्ष्म अन्नद्रव्ये (Zinc, Iron, Boron)",
+    "tracking_notes": "विशेष टीप / सूचना",
+    "submit_btn": "चाचणी विनंती बुक करा",
+    "submitting": "नोंदणी होत आहे...",
+    "success_title": "चाचणी यशस्वीरित्या बुक झाली!",
+    "success_desc": "तुमचा नमुना संकलन आयडी तयार झाला आहे. तुम्ही ट्रॅकिंग विभागात प्रगती पाहू शकता."
+  },
+  "overview": {
+    "latest_report_title": "शेवटचा अधिकृत माती परीक्षण अहवाल",
+    "lab_name": "प्रयोगशाळा",
+    "test_date": "परीक्षण तारीख",
+    "sample_id": "नमुना आयडी",
+    "overall_health": "एकूण माती आरोग्य",
+    "crop_calibrated": "पिकानुसार मूल्यमापन",
+    "recommendations_title": "कृषी शास्त्रज्ञ शिफारस व खत व्यवस्थापन",
+    "deficiencies_title": "महत्त्वाच्या कमतरता",
+    "no_deficiency": "कोणतीही गंभीर कमतरता नाही. मातीचे आरोग्य उत्तम आहे.",
+    "download_pdf": "अधिकृत अहवाल डाउनलोड करा (PDF)",
+    "view_pdf": "अहवाल पहा"
+  },
+  "labs": {
+    "title": "मान्यताप्राप्त माती परीक्षण प्रयोगशाळांची यादी",
+    "search_placeholder": "जिल्हा किंवा लॅबचे नाव शोधा...",
+    "turnaround": "निकाल मिळण्याचा कालावधी",
+    "days": "{{count}} दिवस",
+    "accreditation": "प्रमाणपत्र",
+    "contact": "संपर्क",
+    "book_with_lab": "या लॅबमध्ये चाचणी बुक करा"
+  },
+  "history": {
+    "title": "माती आरोग्य कल व बदल (Historical Trends)",
+    "desc": "मागील चाचण्यांमधील नत्र, स्फुरद, पालाश आणि pH मधील बदल तपासा.",
+    "chart_nitrogen": "नायट्रोजन (N) बदल",
+    "chart_phosphorus": "फॉस्फरस (P) बदल",
+    "chart_potassium": "पोटॅशियम (K) बदल",
+    "chart_ph": "pH पातळी बदल"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "title": "जोखीम मूल्यांकन",
+  "overall": "एकूण जोखीम",
+  "risk_index": "जोखीम निर्देशांक",
+  "your_crop": "तुमचे पीक",
+  "categories": {
+    "weather": "हवामान",
+    "crop_health": "पीक आरोग्य",
+    "market": "बाजार",
+    "water": "पाणी",
+    "pest": "कीड",
+    "nutrient": "अन्नद्रव्य"
+  },
+  "attention": {
+    "title": "लक्ष द्या",
+    "humidity_warning": "वाढत्या आर्द्रतेमुळे रोगाचा प्रादुर्भाव वाढू शकतो.",
+    "action_inspect": "पिकाची पाहणी करा."
+  }
+}

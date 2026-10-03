@@ -1,0 +1,49 @@
+{
+  "title": "मेरी फसल",
+  "health": {
+    "title": "फसल स्वास्थ्य",
+    "overall": "कुल मिलाकर",
+    "weather_risk": "मौसम का खतरा",
+    "disease_risk": "बीमारी का खतरा",
+    "water_status": "पानी की स्थिति",
+    "nutrient_status": "पोषक तत्व"
+  },
+  "stages": {
+    "land_preparation": "भूमि तैयारी",
+    "sowing": "बुवाई",
+    "germination": "अंकुरण",
+    "vegetative": "बढ़वार",
+    "flowering": "फूल आना",
+    "grain_filling": "दाना भरना",
+    "maturity": "पकाव",
+    "harvest": "कटाई"
+  },
+  "timeline_title": "विकास समय-रेखा",
+  "actions_title": "फसल कार्य",
+  "crop_actions": {
+    "water": "पानी",
+    "weather": "मौसम",
+    "health": "स्वास्थ्य",
+    "fertilizer": "खाद",
+    "irrigation": "सिंचाई",
+    "inspection": "फसल निरीक्षण",
+    "general": "सामान्य सलाह"
+  },
+  "empty": {
+    "title": "अभी कोई फसल नहीं जोड़ी",
+    "description": "अपनी पहली फसल जोड़ें।",
+    "cta": "+ फसल जोड़ें"
+  },
+  "crops": {
+    "wheat": "गेहूं",
+    "rice": "चावल",
+    "cotton": "कपास",
+    "sugarcane": "गन्ना",
+    "maize": "मक्का",
+    "soybean": "सोयाबीन",
+    "mustard": "सरसों",
+    "potato": "आलू",
+    "onion": "प्याज",
+    "tomato": "टमाटर"
+  }
+}

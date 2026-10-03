@@ -1,0 +1,16 @@
+{
+  "title": "Notifications",
+  "empty": "No new notifications",
+  "types": {
+    "weather_alert": "Weather Alert",
+    "market_alert": "Market Alert",
+    "crop_alert": "Crop Alert",
+    "system": "System"
+  },
+  "messages": {
+    "rain_expected": "Rain is expected tomorrow.",
+    "price_change": "Wheat prices have changed.",
+    "crop_inspection": "Crop inspection recommended.",
+    "market_favorable": "Market prices are favorable today."
+  }
+}

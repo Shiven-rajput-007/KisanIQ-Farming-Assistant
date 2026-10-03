@@ -1,0 +1,69 @@
+{
+  "weather": {
+    "title": "Today's Weather",
+    "rain": "Rain",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "farming_note": "Rain is expected tomorrow.",
+    "conditions": {
+      "clear": "Mostly Clear",
+      "partly_cloudy": "Partly Cloudy",
+      "cloudy": "Cloudy",
+      "rain": "Rain",
+      "heavy_rain": "Heavy Rain",
+      "thunderstorm": "Thunderstorm",
+      "fog": "Fog",
+      "haze": "Haze",
+      "hot": "Hot",
+      "cold": "Cold"
+    }
+  },
+  "aaj_kya_karein": {
+    "title": "TODAY'S ACTIONS",
+    "subtitle": "What should you do today?"
+  },
+  "actions": {
+    "no_irrigation": {
+      "title": "Do not irrigate today",
+      "description": "Rain is expected tomorrow and your crop doesn't need extra water right now."
+    },
+    "irrigate": {
+      "title": "Irrigate your crop",
+      "description": "Soil moisture is low and no rain is expected in the next 3 days."
+    },
+    "inspect_crop": {
+      "title": "Inspect your crop",
+      "description": "Check leaves for spots or unusual patterns."
+    },
+    "compare_markets": {
+      "title": "Compare market prices",
+      "description": "Today's selling prices are favorable. Compare your options."
+    },
+    "check_drainage": {
+      "title": "Check drainage",
+      "description": "Heavy rain is expected. Ensure proper drainage in your field."
+    }
+  },
+  "alert": {
+    "title": "ATTENTION",
+    "heavy_rain": "Heavy rain is expected tomorrow.",
+    "heavy_rain_action": "Check your crop and drainage area.",
+    "disease_risk": "Disease risk is increasing due to humidity.",
+    "disease_action": "Inspect your crop for symptoms.",
+    "details": "Details"
+  },
+  "selling": {
+    "title": "Ready to sell?",
+    "subtitle": "Compare today's market options.",
+    "best_option": "Best practical option",
+    "compare_cta": "Compare Markets"
+  },
+  "crop_overview": {
+    "title": "Your Crop",
+    "view_details": "View Details"
+  },
+  "assistant": {
+    "title": "Ask KisanIQ",
+    "subtitle": "Ask about your crop, weather, or market."
+  }
+}

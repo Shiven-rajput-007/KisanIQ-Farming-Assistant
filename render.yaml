@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: kisaniq-backend
+    env: node
+    plan: starter
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DATA_GOV_IN_API_KEY
+        sync: false
+      - key: MANDI_SYNC_SECRET
+        generateValue: true
+      - key: OPEN_METEO_BASE_URL
+        value: https://api.open-meteo.com

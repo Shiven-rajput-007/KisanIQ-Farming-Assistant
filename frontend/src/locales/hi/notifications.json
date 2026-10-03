@@ -1,0 +1,16 @@
+{
+  "title": "सूचनाएँ",
+  "empty": "कोई नई सूचना नहीं",
+  "types": {
+    "weather_alert": "मौसम अलर्ट",
+    "market_alert": "मंडी अलर्ट",
+    "crop_alert": "फसल अलर्ट",
+    "system": "सिस्टम"
+  },
+  "messages": {
+    "rain_expected": "कल बारिश की संभावना है।",
+    "price_change": "गेहूं के भाव में बदलाव हुआ है।",
+    "crop_inspection": "फसल जाँच की सलाह है।",
+    "market_favorable": "आज मंडी के भाव अनुकूल हैं।"
+  }
+}

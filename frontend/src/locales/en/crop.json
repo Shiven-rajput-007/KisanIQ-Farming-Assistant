@@ -1,0 +1,49 @@
+{
+  "title": "My Crop",
+  "health": {
+    "title": "Crop Health",
+    "overall": "Overall",
+    "weather_risk": "Weather Risk",
+    "disease_risk": "Disease Risk",
+    "water_status": "Water Status",
+    "nutrient_status": "Nutrient Status"
+  },
+  "stages": {
+    "land_preparation": "Land Preparation",
+    "sowing": "Sowing",
+    "germination": "Germination",
+    "vegetative": "Vegetative Growth",
+    "flowering": "Flowering",
+    "grain_filling": "Grain Filling",
+    "maturity": "Maturity",
+    "harvest": "Harvest"
+  },
+  "timeline_title": "Growth Timeline",
+  "actions_title": "Crop Actions",
+  "crop_actions": {
+    "water": "Water",
+    "weather": "Weather",
+    "health": "Health",
+    "fertilizer": "Fertilizer",
+    "irrigation": "Irrigation",
+    "inspection": "Crop Inspection",
+    "general": "General Advice"
+  },
+  "empty": {
+    "title": "No crop added yet",
+    "description": "Add your first crop to get started.",
+    "cta": "+ Add Crop"
+  },
+  "crops": {
+    "wheat": "Wheat",
+    "rice": "Rice",
+    "cotton": "Cotton",
+    "sugarcane": "Sugarcane",
+    "maize": "Maize",
+    "soybean": "Soybean",
+    "mustard": "Mustard",
+    "potato": "Potato",
+    "onion": "Onion",
+    "tomato": "Tomato"
+  }
+}

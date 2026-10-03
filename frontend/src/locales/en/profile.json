@@ -1,0 +1,51 @@
+{
+  "title": "Profile",
+  "farm_profile": "Farm Profile",
+  "fields": {
+    "name": "Name",
+    "phone": "Phone",
+    "location": "Location",
+    "farm_size": "Farm Size",
+    "soil_type": "Soil Type",
+    "irrigation": "Irrigation Source",
+    "main_crop": "Main Crop",
+    "language": "Language"
+  },
+  "soil_types": {
+    "alluvial": "Alluvial",
+    "black": "Black",
+    "red": "Red",
+    "laterite": "Laterite",
+    "sandy": "Sandy",
+    "clayey": "Clayey",
+    "loamy": "Loamy"
+  },
+  "irrigation_types": {
+    "canal": "Canal",
+    "borewell": "Borewell",
+    "well": "Well",
+    "drip": "Drip",
+    "sprinkler": "Sprinkler",
+    "rainfed": "Rainfed",
+    "river": "River"
+  },
+  "settings": {
+    "title": "Settings",
+    "notifications": "Notifications",
+    "language": "Language",
+    "about": "About KisanIQ"
+  },
+  "onboarding": {
+    "welcome": "Welcome to KisanIQ",
+    "step_name": "Your Name",
+    "step_location": "Location",
+    "step_farm_size": "Farm Size",
+    "step_crop": "Main Crop",
+    "step_soil": "Soil Type",
+    "step_irrigation": "Irrigation Source",
+    "step_language": "Choose Language",
+    "step_of": "Step {{current}} of {{total}}",
+    "get_started": "Get Started",
+    "skip": "Skip for now"
+  }
+}

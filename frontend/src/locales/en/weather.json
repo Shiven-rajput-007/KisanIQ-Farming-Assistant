@@ -1,0 +1,27 @@
+{
+  "title": "Today's Weather",
+  "forecast_title": "Next 3 Days",
+  "farming_impact": {
+    "title": "Impact on Crop",
+    "irrigation": "Irrigation",
+    "disease": "Disease Risk",
+    "disease_risk": "Disease Risk",
+    "field": "Field Work",
+    "sowing": "Sowing",
+    "harvest": "Harvesting",
+    "general": "General Advice",
+    "postpone": "Postpone",
+    "recommended": "Recommended",
+    "inspect_after_rain": "Inspect after rain"
+  },
+  "rain_probability": "{{value}}% chance of rain",
+  "labels": {
+    "temperature": "Temperature",
+    "rain": "Rain",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "uv_index": "UV Index",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset"
+  }
+}

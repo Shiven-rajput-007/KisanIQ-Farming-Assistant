@@ -1,0 +1,27 @@
+{
+  "title": "आजचे हवामान",
+  "forecast_title": "पुढील ३ दिवसांचा अंदाज",
+  "farming_impact": {
+    "title": "पिकावरील परिणाम",
+    "irrigation": "सिंचन",
+    "disease": "रोगराई धोका",
+    "disease_risk": "रोगराई धोका",
+    "field": "शेतातील कामे",
+    "sowing": "पेरणी",
+    "harvest": "काढणी",
+    "general": "सर्वसाधारण सल्ला",
+    "postpone": "पुढे ढकला",
+    "recommended": "योग्य वेळ",
+    "inspect_after_rain": "पावसानंतर शेताची पाहणी करा"
+  },
+  "rain_probability": "पावसाची {{value}}% शक्यता",
+  "labels": {
+    "temperature": "तापमान",
+    "rain": "पाऊस",
+    "humidity": "हवेतील आर्द्रता",
+    "wind": "वाऱ्याचा वेग",
+    "uv_index": "अतिनील निर्देशांक (UV)",
+    "sunrise": "सूर्योदय",
+    "sunset": "सूर्यास्त"
+  }
+}

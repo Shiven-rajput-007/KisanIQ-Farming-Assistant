@@ -1,0 +1,51 @@
+{
+  "title": "प्रोफ़ाइल",
+  "farm_profile": "खेत की जानकारी",
+  "fields": {
+    "name": "नाम",
+    "phone": "फोन",
+    "location": "स्थान",
+    "farm_size": "खेत का आकार",
+    "soil_type": "मिट्टी का प्रकार",
+    "irrigation": "सिंचाई का स्रोत",
+    "main_crop": "मुख्य फसल",
+    "language": "भाषा"
+  },
+  "soil_types": {
+    "alluvial": "जलोढ़",
+    "black": "काली",
+    "red": "लाल",
+    "laterite": "लैटेराइट",
+    "sandy": "रेतीली",
+    "clayey": "चिकनी",
+    "loamy": "दोमट"
+  },
+  "irrigation_types": {
+    "canal": "नहर",
+    "borewell": "बोरवेल",
+    "well": "कुआँ",
+    "drip": "ड्रिप",
+    "sprinkler": "स्प्रिंकलर",
+    "rainfed": "वर्षा आधारित",
+    "river": "नदी"
+  },
+  "settings": {
+    "title": "सेटिंग्स",
+    "notifications": "सूचनाएँ",
+    "language": "भाषा",
+    "about": "किसानIQ के बारे में"
+  },
+  "onboarding": {
+    "welcome": "किसानIQ में आपका स्वागत है",
+    "step_name": "आपका नाम",
+    "step_location": "स्थान",
+    "step_farm_size": "खेत का आकार",
+    "step_crop": "मुख्य फसल",
+    "step_soil": "मिट्टी का प्रकार",
+    "step_irrigation": "सिंचाई का स्रोत",
+    "step_language": "भाषा चुनें",
+    "step_of": "चरण {{current}} / {{total}}",
+    "get_started": "शुरू करें",
+    "skip": "बाद में करें"
+  }
+}

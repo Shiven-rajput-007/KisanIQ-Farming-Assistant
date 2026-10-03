@@ -1,0 +1,40 @@
+{
+  "title": "Ask KisanIQ AI",
+  "subtitle": "Voice-enabled agricultural intelligence for weather, mandi prices, crops, and market trade.",
+  "voice_button": "Speak to ask",
+  "listening": "Listening... Speak now",
+  "listening_sub": "Tap microphone again to stop",
+  "input_placeholder": "Type your question or speak...",
+  "quick_questions": {
+    "rain_tomorrow": "Will it rain tomorrow?",
+    "when_water": "When should I water?",
+    "crop_health": "How is my crop?",
+    "crop_problem": "My crop has a problem?",
+    "when_sell": "When should I sell?",
+    "next_crop": "What crop should I plant next?"
+  },
+  "voice_settings": {
+    "title": "Voice Assistant Settings",
+    "auto_speak": "Auto-speak replies",
+    "auto_speak_desc": "Automatically speak answers out loud after response",
+    "language": "Voice Language",
+    "lang_hi": "Hindi (हिन्दी)",
+    "lang_en": "English (Indian)",
+    "close": "Close"
+  },
+  "actions": {
+    "proposed_title": "Action Confirmation Required",
+    "confirm": "Confirm & Execute",
+    "cancel": "Cancel",
+    "executing": "Executing action...",
+    "completed": "Action executed successfully!",
+    "cancelled": "Action was cancelled."
+  },
+  "errors": {
+    "mic_permission_denied": "Microphone permission was denied. Please allow microphone access in your browser settings.",
+    "speech_not_supported": "Speech recognition is not supported in this browser. Please use Google Chrome or Edge.",
+    "no_speech_detected": "No speech detected. Please tap the mic and try speaking again.",
+    "network_error": "Network error occurred during speech recognition. Please check your connection."
+  },
+  "speak_tooltip": "Listen to reply"
+}

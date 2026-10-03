@@ -1,0 +1,27 @@
+{
+  "title": "आज का मौसम",
+  "forecast_title": "अगले 3 दिन",
+  "farming_impact": {
+    "title": "फसल पर असर",
+    "irrigation": "सिंचाई",
+    "disease": "बीमारी का खतरा",
+    "disease_risk": "बीमारी का खतरा",
+    "field": "खेत कार्य",
+    "sowing": "बुवाई",
+    "harvest": "कटाई",
+    "general": "सामान्य सलाह",
+    "postpone": "टालें",
+    "recommended": "सुझाव",
+    "inspect_after_rain": "बारिश के बाद जाँच करें"
+  },
+  "rain_probability": "बारिश की {{value}}% संभावना",
+  "labels": {
+    "temperature": "तापमान",
+    "rain": "बारिश",
+    "humidity": "नमी",
+    "wind": "हवा",
+    "uv_index": "UV इंडेक्स",
+    "sunrise": "सूर्योदय",
+    "sunset": "सूर्यास्त"
+  }
+}
