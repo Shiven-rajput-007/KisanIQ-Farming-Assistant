@@ -11,6 +11,7 @@
     "seed": "tsx db/seed.ts",
     "test:mandi": "tsx tests/mandi.test.ts",
     "test:ceda": "tsx scripts/verify-ceda-live.ts",
+    "test:weather": "tsx scripts/verify-weather-live.ts",
     "test:fullstack": "tsx verify-fullstack.ts",
     "test:api": "tsx scripts/test_api_suite.ts",
     "test:verify-all": "tsx verify-all.ts",

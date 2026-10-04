@@ -9,9 +9,13 @@ export interface WeatherData {
   windSpeed: number | null;
   rainProbability: number | null;
   expectedRainfall: number | null;
+  pressure?: number | null;
+  cloudCover?: number | null;
+  precipitation?: number | null;
+  weatherCode?: number | null;
   uvIndex?: number | null;
-  sunrise?: string;
-  sunset?: string;
+  sunrise?: string | null;
+  sunset?: string | null;
   lastUpdated: string;
   isDemo?: boolean;
 }
@@ -38,7 +42,13 @@ export interface FarmingImplication {
   severity: 'positive' | 'warning' | 'caution';
 }
 
-function mapWmoCode(code?: number | null): { condition: string; conditionKey: string } {
+/**
+ * Maps WMO weather codes (Open-Meteo) to standard KisanIQ condition keys
+ */
+function mapWmoCode(code?: number | null, temp?: number | null): { condition: string; conditionKey: string } {
+  if (temp !== undefined && temp !== null && temp >= 42) {
+    return { condition: 'hot', conditionKey: 'hot' };
+  }
   if (code === undefined || code === null || isNaN(code)) {
     return { condition: 'clear', conditionKey: 'clear' };
   }
@@ -52,36 +62,69 @@ function mapWmoCode(code?: number | null): { condition: string; conditionKey: st
   return { condition: 'clear', conditionKey: 'clear' };
 }
 
-function mapWeatherApiCondition(conditionText: string = ''): { condition: string; conditionKey: string } {
-  const text = conditionText.toLowerCase();
-  if (text.includes('thunder') || text.includes('storm')) {
+/**
+ * Maps OpenWeather condition IDs to standard KisanIQ condition keys
+ */
+function mapOpenWeatherCondition(id?: number | null, mainText: string = '', temp?: number | null): { condition: string; conditionKey: string } {
+  if (temp !== undefined && temp !== null && temp >= 42) {
+    return { condition: 'hot', conditionKey: 'hot' };
+  }
+  if (!id) {
+    const text = mainText.toLowerCase();
+    if (text.includes('thunder') || text.includes('storm')) return { condition: 'thunderstorm', conditionKey: 'thunderstorm' };
+    if (text.includes('heavy') || text.includes('torrential')) return { condition: 'heavy_rain', conditionKey: 'heavy_rain' };
+    if (text.includes('rain') || text.includes('drizzle')) return { condition: 'rain', conditionKey: 'rain' };
+    if (text.includes('cloud')) return { condition: 'cloudy', conditionKey: 'cloudy' };
+    if (text.includes('snow') || text.includes('ice')) return { condition: 'cold', conditionKey: 'cold' };
+    if (text.includes('fog') || text.includes('mist')) return { condition: 'fog', conditionKey: 'fog' };
+    if (text.includes('haze') || text.includes('smoke') || text.includes('dust')) return { condition: 'haze', conditionKey: 'haze' };
+    return { condition: 'clear', conditionKey: 'clear' };
+  }
+
+  // 2xx Thunderstorm
+  if (id >= 200 && id < 300) {
     return { condition: 'thunderstorm', conditionKey: 'thunderstorm' };
   }
-  if (text.includes('heavy rain') || text.includes('torrential')) {
-    return { condition: 'heavy_rain', conditionKey: 'heavy_rain' };
-  }
-  if (text.includes('rain') || text.includes('drizzle') || text.includes('shower')) {
+  // 3xx Drizzle
+  if (id >= 300 && id < 400) {
     return { condition: 'rain', conditionKey: 'rain' };
   }
-  if (text.includes('cloud') || text.includes('overcast')) {
-    if (text.includes('partly')) return { condition: 'partly_cloudy', conditionKey: 'partly_cloudy' };
-    return { condition: 'cloudy', conditionKey: 'cloudy' };
+  // 5xx Rain
+  if (id >= 500 && id < 600) {
+    if (id === 502 || id === 503 || id === 504 || id === 522) {
+      return { condition: 'heavy_rain', conditionKey: 'heavy_rain' };
+    }
+    return { condition: 'rain', conditionKey: 'rain' };
   }
-  if (text.includes('fog') || text.includes('mist')) {
-    return { condition: 'fog', conditionKey: 'fog' };
-  }
-  if (text.includes('haze') || text.includes('smoke')) {
-    return { condition: 'haze', conditionKey: 'haze' };
-  }
-  if (text.includes('snow') || text.includes('blizzard') || text.includes('ice') || text.includes('freez')) {
+  // 6xx Snow
+  if (id >= 600 && id < 700) {
     return { condition: 'cold', conditionKey: 'cold' };
   }
+  // 7xx Atmosphere
+  if (id >= 700 && id < 800) {
+    if (id === 701 || id === 741) return { condition: 'fog', conditionKey: 'fog' };
+    if (id === 711 || id === 721) return { condition: 'haze', conditionKey: 'haze' };
+    if (id === 781) return { condition: 'heavy_rain', conditionKey: 'heavy_rain' };
+    return { condition: 'fog', conditionKey: 'fog' };
+  }
+  // 800 Clear
+  if (id === 800) {
+    return { condition: 'clear', conditionKey: 'clear' };
+  }
+  // 80x Clouds
+  if (id === 801 || id === 802) {
+    return { condition: 'partly_cloudy', conditionKey: 'partly_cloudy' };
+  }
+  if (id === 803 || id === 804) {
+    return { condition: 'cloudy', conditionKey: 'cloudy' };
+  }
+
   return { condition: 'clear', conditionKey: 'clear' };
 }
 
 export class WeatherService {
-  public getWeatherApiBaseUrl(): string {
-    return (process.env.WEATHERAPI_BASE_URL || 'https://api.weatherapi.com/v1').replace(/\/+$/, '');
+  public getOpenWeatherBaseUrl(): string {
+    return (process.env.OPENWEATHER_BASE_URL || 'https://api.openweathermap.org').trim().replace(/\/+$/, '');
   }
 
   public getOpenMeteoBaseUrl(): string {
@@ -92,8 +135,8 @@ export class WeatherService {
     return url;
   }
 
-  public isWeatherApiConfigured(): boolean {
-    const key = process.env.WEATHER_API_KEY;
+  public isOpenWeatherConfigured(): boolean {
+    const key = process.env.OPENWEATHER_API_KEY;
     return Boolean(key && key.trim() !== '');
   }
 
@@ -165,122 +208,184 @@ export class WeatherService {
   }
 
   /**
-   * Fetch weather from WeatherAPI.com (Primary provider)
-   * Official endpoint: GET /forecast.json?key=...&q=<lat>,<lon>&days=3&aqi=no&alerts=no
+   * Fetch weather from OpenWeatherMap (Primary provider)
+   * Official endpoints:
+   * Current: GET /data/2.5/weather?lat=<lat>&lon=<lon>&appid=<key>&units=metric
+   * Forecast: GET /data/2.5/forecast?lat=<lat>&lon=<lon>&appid=<key>&units=metric&cnt=24
    * Timeout: 6000ms. Retries at most once for transient errors. Never retries 4xx.
    */
-  private async fetchFromWeatherApi(lat: number, lon: number): Promise<{
+  private async fetchFromOpenWeather(lat: number, lon: number): Promise<{
     current: WeatherData;
     forecast: WeatherForecast[];
     implications: FarmingImplication[];
   } | null> {
-    const key = process.env.WEATHER_API_KEY?.trim();
+    const key = process.env.OPENWEATHER_API_KEY?.trim();
     if (!key) return null;
 
-    const baseUrl = this.getWeatherApiBaseUrl();
-    const url = `${baseUrl}/forecast.json?key=${encodeURIComponent(key)}&q=${lat},${lon}&days=3&aqi=no&alerts=no`;
+    const baseUrl = this.getOpenWeatherBaseUrl();
+    const currentUrl = `${baseUrl}/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${encodeURIComponent(key)}&units=metric`;
+    const forecastUrl = `${baseUrl}/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${encodeURIComponent(key)}&units=metric&cnt=24`;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       const startTime = Date.now();
       try {
-        const res = await fetch(url, {
-          signal: AbortSignal.timeout(6000),
-        });
+        // Fetch current and forecast in parallel with 6s timeout
+        const [currentRes, forecastRes] = await Promise.all([
+          fetch(currentUrl, { signal: AbortSignal.timeout(6000) }),
+          fetch(forecastUrl, { signal: AbortSignal.timeout(6000) }),
+        ]);
+
         const duration = Date.now() - startTime;
 
-        if (res.ok) {
-          const json: any = await res.json();
-          if (json && json.current && json.forecast && Array.isArray(json.forecast.forecastday)) {
-            const cond = mapWeatherApiCondition(json.current.condition?.text);
-            const currentTemp = json.current.temp_c !== undefined && json.current.temp_c !== null
-              ? Math.round(Number(json.current.temp_c))
-              : null;
-            const feelsLike = json.current.feelslike_c !== undefined && json.current.feelslike_c !== null
-              ? Math.round(Number(json.current.feelslike_c))
-              : null;
-            const humidity = json.current.humidity !== undefined && json.current.humidity !== null
-              ? Math.round(Number(json.current.humidity))
-              : null;
-            const windSpeed = json.current.wind_kph !== undefined && json.current.wind_kph !== null
-              ? Math.round(Number(json.current.wind_kph))
-              : null;
-            const rainProb = json.forecast.forecastday[0]?.day?.daily_chance_of_rain !== undefined
-              ? Number(json.forecast.forecastday[0].day.daily_chance_of_rain)
-              : null;
-            const expectedRain = json.forecast.forecastday[0]?.day?.totalprecip_mm !== undefined
-              ? Number(json.forecast.forecastday[0].day.totalprecip_mm)
-              : null;
-            const uv = json.current.uv !== undefined && json.current.uv !== null ? Number(json.current.uv) : null;
+        if (currentRes.ok) {
+          const currentJson: any = await currentRes.json();
+          const forecastJson: any = forecastRes.ok ? await forecastRes.json() : null;
 
-            const current: WeatherData = {
-              temperature: currentTemp,
-              feelsLike,
-              condition: cond.condition,
-              conditionKey: cond.conditionKey,
-              humidity,
-              windSpeed,
-              rainProbability: rainProb,
-              expectedRainfall: expectedRain,
-              uvIndex: uv,
-              lastUpdated: new Date().toISOString(),
-            };
+          const temp = currentJson.main?.temp !== undefined && currentJson.main?.temp !== null
+            ? Math.round(Number(currentJson.main.temp))
+            : null;
+          const feelsLike = currentJson.main?.feels_like !== undefined && currentJson.main?.feels_like !== null
+            ? Math.round(Number(currentJson.main.feels_like))
+            : null;
+          const humidity = currentJson.main?.humidity !== undefined && currentJson.main?.humidity !== null
+            ? Math.round(Number(currentJson.main.humidity))
+            : null;
+          // OpenWeather wind.speed is in m/s (metric) -> convert to km/h (multiply by 3.6)
+          const windSpeed = currentJson.wind?.speed !== undefined && currentJson.wind?.speed !== null
+            ? Math.round(Number(currentJson.wind.speed) * 3.6)
+            : null;
+          const pressure = currentJson.main?.pressure !== undefined && currentJson.main?.pressure !== null
+            ? Math.round(Number(currentJson.main.pressure))
+            : null;
+          const cloudCover = currentJson.clouds?.all !== undefined && currentJson.clouds?.all !== null
+            ? Math.round(Number(currentJson.clouds.all))
+            : null;
+          const precipitation = currentJson.rain?.['1h'] !== undefined
+            ? Number(currentJson.rain['1h'])
+            : (currentJson.rain?.['3h'] !== undefined ? Number(currentJson.rain['3h']) : null);
+          const weatherId = currentJson.weather?.[0]?.id !== undefined
+            ? Number(currentJson.weather[0].id)
+            : null;
+          const mainText = currentJson.weather?.[0]?.main || '';
+          const conditionInfo = mapOpenWeatherCondition(weatherId, mainText, temp);
 
-            const forecast: WeatherForecast[] = json.forecast.forecastday.map((fDay: any) => {
-              const dayDate = fDay.date;
-              const dateObj = new Date(dayDate);
+          const sunrise = currentJson.sys?.sunrise
+            ? new Date(currentJson.sys.sunrise * 1000).toISOString()
+            : null;
+          const sunset = currentJson.sys?.sunset
+            ? new Date(currentJson.sys.sunset * 1000).toISOString()
+            : null;
+
+          // Parse forecast items into 3 daily buckets
+          const forecast: WeatherForecast[] = [];
+          let tomorrowRainProb: number | null = null;
+          let tomorrowRainAmount: number | null = null;
+
+          if (forecastJson && Array.isArray(forecastJson.list)) {
+            // Group 3-hour forecasts by calendar date
+            const daysMap = new Map<string, any[]>();
+            for (const item of forecastJson.list) {
+              const dateStr = item.dt_txt ? item.dt_txt.split(' ')[0] : new Date(item.dt * 1000).toISOString().split('T')[0];
+              if (!daysMap.has(dateStr)) {
+                daysMap.set(dateStr, []);
+              }
+              daysMap.get(dateStr)!.push(item);
+            }
+
+            const sortedDates = Array.from(daysMap.keys()).sort();
+            // Up to 3 forecast days
+            for (let i = 0; i < Math.min(sortedDates.length, 3); i++) {
+              const dStr = sortedDates[i];
+              const items = daysMap.get(dStr)!;
+              const dateObj = new Date(dStr);
               const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-              const dayCond = mapWeatherApiCondition(fDay.day?.condition?.text);
 
-              return {
-                date: dayDate,
+              let maxTemp = -Infinity;
+              let minTemp = Infinity;
+              let maxPop = 0;
+              let totalRain = 0;
+              let avgHum = 0;
+              let maxWind = 0;
+              let middayItem = items[Math.floor(items.length / 2)] || items[0];
+
+              for (const it of items) {
+                const t = it.main?.temp !== undefined ? Number(it.main.temp) : 0;
+                if (t > maxTemp) maxTemp = t;
+                if (t < minTemp) minTemp = t;
+                if (it.pop !== undefined && Number(it.pop) > maxPop) {
+                  maxPop = Number(it.pop);
+                }
+                if (it.rain?.['3h']) {
+                  totalRain += Number(it.rain['3h']);
+                }
+                if (it.main?.humidity) {
+                  avgHum += Number(it.main.humidity);
+                }
+                if (it.wind?.speed) {
+                  const ws = Number(it.wind.speed) * 3.6;
+                  if (ws > maxWind) maxWind = ws;
+                }
+              }
+
+              avgHum = items.length > 0 ? Math.round(avgHum / items.length) : (humidity || 50);
+              const dayWeatherId = middayItem.weather?.[0]?.id;
+              const dayMain = middayItem.weather?.[0]?.main || '';
+              const dayCond = mapOpenWeatherCondition(dayWeatherId, dayMain, maxTemp !== -Infinity ? Math.round(maxTemp) : null);
+
+              forecast.push({
+                date: dStr,
                 dayName,
-                high: fDay.day?.maxtemp_c !== undefined && fDay.day?.maxtemp_c !== null
-                  ? Math.round(Number(fDay.day.maxtemp_c))
-                  : null,
-                low: fDay.day?.mintemp_c !== undefined && fDay.day?.mintemp_c !== null
-                  ? Math.round(Number(fDay.day.mintemp_c))
-                  : null,
+                high: maxTemp !== -Infinity ? Math.round(maxTemp) : null,
+                low: minTemp !== Infinity ? Math.round(minTemp) : null,
                 condition: dayCond.condition,
                 conditionKey: dayCond.conditionKey,
-                rainProbability: fDay.day?.daily_chance_of_rain !== undefined
-                  ? Number(fDay.day.daily_chance_of_rain)
-                  : null,
-                expectedRainfall: fDay.day?.totalprecip_mm !== undefined
-                  ? Number(fDay.day.totalprecip_mm)
-                  : null,
-                humidity: fDay.day?.avghumidity !== undefined && fDay.day?.avghumidity !== null
-                  ? Math.round(Number(fDay.day.avghumidity))
-                  : null,
-                windSpeed: fDay.day?.maxwind_kph !== undefined && fDay.day?.maxwind_kph !== null
-                  ? Math.round(Number(fDay.day.maxwind_kph))
-                  : null,
-              };
-            });
+                rainProbability: Math.round(maxPop * 100),
+                expectedRainfall: Math.round(totalRain * 10) / 10,
+                humidity: avgHum,
+                windSpeed: Math.round(maxWind),
+              });
+            }
 
-            const tomorrowRainProb = json.forecast.forecastday[1]?.day?.daily_chance_of_rain !== undefined
-              ? Number(json.forecast.forecastday[1].day.daily_chance_of_rain)
-              : null;
-            const tomorrowRainAmount = json.forecast.forecastday[1]?.day?.totalprecip_mm !== undefined
-              ? Number(json.forecast.forecastday[1].day.totalprecip_mm)
-              : null;
-
-            const implications = this.generateImplications(currentTemp, humidity, tomorrowRainProb, tomorrowRainAmount);
-            console.log(`[Weather] WeatherAPI success host=${baseUrl} duration=${duration}ms`);
-            return { current, forecast, implications };
+            if (forecast.length > 1) {
+              tomorrowRainProb = forecast[1].rainProbability;
+              tomorrowRainAmount = forecast[1].expectedRainfall ?? null;
+            }
           }
+
+          const current: WeatherData = {
+            temperature: temp,
+            feelsLike,
+            condition: conditionInfo.condition,
+            conditionKey: conditionInfo.conditionKey,
+            humidity,
+            windSpeed,
+            rainProbability: forecast[0]?.rainProbability ?? null,
+            expectedRainfall: precipitation,
+            pressure,
+            cloudCover,
+            precipitation,
+            weatherCode: weatherId,
+            sunrise,
+            sunset,
+            lastUpdated: new Date().toISOString(),
+          };
+
+          const implications = this.generateImplications(temp, humidity, tomorrowRainProb, tomorrowRainAmount);
+          console.log(`[Weather] provider=OpenWeatherMap status=200 duration=${duration}ms`);
+          return { current, forecast, implications };
         }
 
-        // Handle HTTP error
-        console.warn(`[Weather] WeatherAPI failed host=${baseUrl} status=${res.status} duration=${duration}ms`);
-        // Permanent 4xx error (e.g. 401 unauthorized, 403 forbidden) — do not retry
-        if (res.status >= 400 && res.status < 500) {
+        // Safe logging of OpenWeather error without exposing API key
+        console.warn(`[Weather] provider=OpenWeatherMap status=${currentRes.status} duration=${duration}ms`);
+
+        // Permanent 4xx error (e.g. 401 unauthorized, 403 forbidden, 404 not found) — do NOT retry
+        if (currentRes.status >= 400 && currentRes.status < 500) {
           return null;
         }
       } catch (err: any) {
         const duration = Date.now() - startTime;
-        const isTimeout = err.name === 'TimeoutError' || err.message?.includes('timeout');
         console.warn(
-          `[Weather] WeatherAPI failed host=${baseUrl} type=${isTimeout ? 'timeout' : 'network'} code=${err.code || err.name} duration=${duration}ms`
+          `[Weather] provider=OpenWeatherMap network_error code=${err.code || err.name || 'NETWORK_ERROR'} duration=${duration}ms`
         );
       }
 
@@ -293,7 +398,7 @@ export class WeatherService {
   }
 
   /**
-   * Fetch weather from Open-Meteo (Secondary provider)
+   * Fetch weather from Open-Meteo (Secondary fallback provider)
    * Official endpoint: GET /v1/forecast?latitude=...&longitude=...&current=...&daily=...&timezone=Asia/Kolkata
    * Timeout: 6000ms. Retries at most once for transient errors.
    */
@@ -304,12 +409,14 @@ export class WeatherService {
     successfulUrl: string;
   } | null> {
     const baseCandidate = this.getOpenMeteoBaseUrl();
+    const queryParams = 'current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,surface_pressure,cloud_cover&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata';
+
     const urls = [
-      `${baseCandidate}/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata`
+      `${baseCandidate}/v1/forecast?latitude=${lat}&longitude=${lon}&${queryParams}`
     ];
     if (baseCandidate !== 'https://api.open-meteo.com') {
       urls.push(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&${queryParams}`
       );
     }
 
@@ -343,14 +450,21 @@ export class WeatherService {
             const windSpeed = currentRaw.wind_speed_10m !== undefined && currentRaw.wind_speed_10m !== null
               ? Math.round(Number(currentRaw.wind_speed_10m))
               : null;
+            const pressure = currentRaw.surface_pressure !== undefined && currentRaw.surface_pressure !== null
+              ? Math.round(Number(currentRaw.surface_pressure))
+              : null;
+            const cloudCover = currentRaw.cloud_cover !== undefined && currentRaw.cloud_cover !== null
+              ? Math.round(Number(currentRaw.cloud_cover))
+              : null;
             const rainProbability =
               dailyRaw.precipitation_probability_max?.[0] !== undefined
                 ? Number(dailyRaw.precipitation_probability_max[0])
                 : null;
             const expectedRainfall =
               currentRaw.precipitation !== undefined ? Number(currentRaw.precipitation) : null;
+            const weatherCode = currentRaw.weather_code !== undefined ? Number(currentRaw.weather_code) : null;
 
-            const conditionInfo = mapWmoCode(currentRaw.weather_code);
+            const conditionInfo = mapWmoCode(weatherCode, temp);
 
             const current: WeatherData = {
               temperature: temp,
@@ -361,6 +475,10 @@ export class WeatherService {
               windSpeed,
               rainProbability,
               expectedRainfall,
+              pressure,
+              cloudCover,
+              precipitation: expectedRainfall,
+              weatherCode,
               lastUpdated: new Date().toISOString(),
             };
 
@@ -405,17 +523,16 @@ export class WeatherService {
               : null;
 
             const implications = this.generateImplications(temp, humidity, tomorrowRainProb, tomorrowRainAmount);
-            console.log(`[Weather] Open-Meteo success duration=${duration}ms`);
+            console.log(`[Weather] provider=Open-Meteo status=200 duration=${duration}ms`);
             return { current, forecast, implications, successfulUrl: testUrl };
           }
 
-          console.warn(`[Weather] Open-Meteo failed status=${res.status} duration=${duration}ms`);
+          console.warn(`[Weather] provider=Open-Meteo status=${res.status} duration=${duration}ms`);
           if (res.status >= 400 && res.status < 500) break;
         } catch (err: any) {
           const duration = Date.now() - startTime;
-          const isTimeout = err.name === 'TimeoutError' || err.message?.includes('timeout');
           console.warn(
-            `[Weather] Open-Meteo failed type=${isTimeout ? 'timeout' : 'network'} code=${err.code || err.name} duration=${duration}ms`
+            `[Weather] provider=Open-Meteo network_error code=${err.code || err.name || 'NETWORK_ERROR'} duration=${duration}ms`
           );
         }
 
@@ -429,10 +546,10 @@ export class WeatherService {
   }
 
   /**
-   * Primary Weather Service Pipeline:
+   * Final Weather Service Pipeline:
    * 1. Fresh database cache (max 15–30 minutes)
-   * 2. WeatherAPI.com (Primary provider)
-   * 3. Open-Meteo (Secondary provider)
+   * 2. OpenWeatherMap (Primary provider)
+   * 3. Open-Meteo (Secondary fallback provider)
    * 4. Valid recent cached data (up to 24h archive, clearly marked stale)
    * 5. Explicit WEATHER_UNAVAILABLE
    */
@@ -442,7 +559,7 @@ export class WeatherService {
     implications: FarmingImplication[];
     metadata: {
       dataSource: string;
-      provider: 'weatherapi' | 'open-meteo' | 'cache';
+      provider: 'openweathermap' | 'open-meteo' | 'cache';
       apiUrl: string;
       lastUpdated: string | Date;
       isCached: boolean;
@@ -496,10 +613,10 @@ export class WeatherService {
       console.warn('[WeatherService] Cache lookup notice:', e);
     }
 
-    // 3. Primary Provider: WeatherAPI.com (if configured)
-    if (this.isWeatherApiConfigured()) {
-      const weatherApiData = await this.fetchFromWeatherApi(lat, lon);
-      if (weatherApiData) {
+    // 3. Primary Provider: OpenWeatherMap (if configured)
+    if (this.isOpenWeatherConfigured()) {
+      const openWeatherData = await this.fetchFromOpenWeather(lat, lon);
+      if (openWeatherData) {
         // Save to cache
         try {
           await db.query(
@@ -514,9 +631,9 @@ export class WeatherService {
               cacheKey,
               lat,
               lon,
-              JSON.stringify(weatherApiData.current),
-              JSON.stringify(weatherApiData.forecast),
-              JSON.stringify(weatherApiData.implications),
+              JSON.stringify(openWeatherData.current),
+              JSON.stringify(openWeatherData.forecast),
+              JSON.stringify(openWeatherData.implications),
             ]
           );
         } catch (saveErr) {
@@ -524,13 +641,13 @@ export class WeatherService {
         }
 
         return {
-          current: weatherApiData.current,
-          forecast: weatherApiData.forecast,
-          implications: weatherApiData.implications,
+          current: openWeatherData.current,
+          forecast: openWeatherData.forecast,
+          implications: openWeatherData.implications,
           metadata: {
-            dataSource: 'WeatherAPI.com',
-            provider: 'weatherapi',
-            apiUrl: this.getWeatherApiBaseUrl(),
+            dataSource: 'OpenWeatherMap API',
+            provider: 'openweathermap',
+            apiUrl: this.getOpenWeatherBaseUrl(),
             lastUpdated: new Date().toISOString(),
             isCached: false,
             isStale: false,
@@ -539,7 +656,7 @@ export class WeatherService {
       }
     }
 
-    // 4. Secondary Provider: Open-Meteo API
+    // 4. Secondary Fallback Provider: Open-Meteo API
     const openMeteoData = await this.fetchFromOpenMeteo(lat, lon);
     if (openMeteoData) {
       // Save to cache
@@ -610,7 +727,7 @@ export class WeatherService {
     }
 
     // 6. Strictly return explicit WEATHER_UNAVAILABLE — zero synthetic weather numbers
-    const error = new Error('Weather data is temporarily unavailable from both meteorological providers.');
+    const error = new Error('Weather data is temporarily unavailable from all meteorological providers.');
     (error as any).code = 'WEATHER_UNAVAILABLE';
     throw error;
   }

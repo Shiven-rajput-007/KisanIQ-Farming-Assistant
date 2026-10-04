@@ -27,3 +27,7 @@ services:
         generateValue: true
       - key: OPEN_METEO_BASE_URL
         value: https://api.open-meteo.com
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: OPENWEATHER_BASE_URL
+        value: https://api.openweathermap.org

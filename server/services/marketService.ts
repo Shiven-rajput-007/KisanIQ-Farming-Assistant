@@ -86,6 +86,8 @@ export class MarketService {
       isStale: boolean;
       scope?: 'district' | 'state' | 'national';
       scopeNote?: string;
+      errorReason?: 'auth_failure' | 'rate_limit' | 'network_failure' | 'malformed_response' | 'no_records';
+      errorMessage?: string;
       note?: string;
       missingKey?: string;
     };
@@ -171,15 +173,30 @@ export class MarketService {
       }
     }
 
+    let cedaErrorReason: 'auth_failure' | 'rate_limit' | 'network_failure' | 'malformed_response' | 'no_records' | undefined = undefined;
+    let cedaErrorMessage: string | undefined = undefined;
+
     // If no records found, or records are stale, and CEDA API is configured: trigger live sync
     if ((priceRows.length === 0 || isStale) && isCedaConfigured) {
       try {
         console.log(`[MarketService] Triggering CEDA fetch for commodity "${cropName}" (state: ${state || 'All'})...`);
-        await mandiService.syncFromCedaApi({
+        const syncRes = await mandiService.syncFromCedaApi({
           commodity: cropName,
           state,
           district,
         });
+
+        if (syncRes.status === 'failed') {
+          cedaErrorMessage = syncRes.errorMessage;
+          if (syncRes.errorMessage?.includes('401') || syncRes.errorMessage?.includes('Unauthorized') || syncRes.errorMessage?.includes('CEDA_API_KEY')) {
+            cedaErrorReason = 'auth_failure';
+          } else if (syncRes.errorMessage?.includes('429') || syncRes.errorMessage?.includes('Too Many Requests')) {
+            cedaErrorReason = 'rate_limit';
+          } else {
+            cedaErrorReason = 'network_failure';
+          }
+        }
+
         // Re-query PostgreSQL after ingestion with tiered fallback
         priceRows = await this.queryMarketPriceRows(cropName, district, state);
         if (priceRows.length > 0) {
@@ -200,8 +217,27 @@ export class MarketService {
           }
         }
       } catch (syncErr: any) {
-        console.warn('[MarketService] On-demand CEDA sync notice:', syncErr.message);
+        cedaErrorMessage = syncErr.message;
+        if (syncErr.message?.includes('401') || syncErr.message?.includes('Unauthorized') || syncErr.message?.includes('CEDA_API_KEY')) {
+          cedaErrorReason = 'auth_failure';
+        } else if (syncErr.message?.includes('429') || syncErr.message?.includes('Too Many Requests') || syncErr.message?.includes('rate limit')) {
+          cedaErrorReason = 'rate_limit';
+        } else if (syncErr.message?.includes('timeout') || syncErr.message?.includes('ENOTFOUND') || syncErr.message?.includes('fetch failed')) {
+          cedaErrorReason = 'network_failure';
+        } else if (syncErr.message?.includes('JSON') || syncErr.message?.includes('malformed') || syncErr.message?.includes('Unexpected token')) {
+          cedaErrorReason = 'malformed_response';
+        } else {
+          cedaErrorReason = 'network_failure';
+        }
+        console.warn(`[MarketService] On-demand CEDA sync error (${cedaErrorReason}):`, syncErr.message);
       }
+    } else if (!isCedaConfigured && priceRows.length === 0) {
+      cedaErrorReason = 'auth_failure';
+      cedaErrorMessage = 'CEDA_API_KEY is not configured in backend environment variables.';
+    }
+
+    if (priceRows.length === 0 && !cedaErrorReason) {
+      cedaErrorReason = 'no_records';
     }
 
     const apiStatus = {
@@ -213,6 +249,8 @@ export class MarketService {
       isStale,
       scope,
       scopeNote,
+      errorReason: cedaErrorReason,
+      errorMessage: cedaErrorMessage,
       ...(isCedaConfigured
         ? { note: 'Live daily mandi price streaming active via CEDA Agmarknet API.' }
         : {
@@ -223,10 +261,21 @@ export class MarketService {
 
     // 3. ZERO DEMO FALLBACK: If NO verified records exist, return explicit MANDI_DATA_UNAVAILABLE
     if (priceRows.length === 0) {
+      let failureMessage = `No verified APMC market records available for "${cropName}" from CEDA Agmarknet.`;
+      if (cedaErrorReason === 'auth_failure') {
+        failureMessage = 'CEDA Agmarknet authentication unconfigured or key rejected.';
+      } else if (cedaErrorReason === 'rate_limit') {
+        failureMessage = 'CEDA Agmarknet rate limit reached. Please retry in a few moments.';
+      } else if (cedaErrorReason === 'network_failure') {
+        failureMessage = 'Network connection to CEDA Agmarknet API is temporarily unreachable.';
+      } else if (cedaErrorReason === 'malformed_response') {
+        failureMessage = 'CEDA Agmarknet returned an invalid response structure.';
+      }
+
       return {
         success: false,
         code: 'MANDI_DATA_UNAVAILABLE',
-        message: `No verified APMC market records available for "${cropName}" from CEDA Agmarknet.`,
+        message: failureMessage,
         cropName,
         availableQuantity: quantityQuintals,
         apiStatus,

@@ -156,8 +156,8 @@ export async function getWeatherStatus(_req: AuthRequest, res: Response): Promis
   }
 
   res.json({
+    openWeatherConfigured: weatherService.isOpenWeatherConfigured(),
     openMeteoConfigured: weatherService.isOpenMeteoConfigured(),
-    weatherApiConfigured: weatherService.isWeatherApiConfigured(),
     cacheAvailable,
   });
 }
