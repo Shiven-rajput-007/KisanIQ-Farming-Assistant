@@ -33,3 +33,24 @@ logs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Ignore unrelated files & documents in root
+medical-diagnosis-assistant/
+data/
+figures/
+preview_pages/
+__pycache__/
+*.docx
+*.pdf
+*.xlsx
+*.zip
+*.html
+*.tex
+build_*.py
+generate_*.py
+run_automated_audit.py
+test_*.py
+test_*.docx
+test.pdf
+chrome_test.pdf
+CHATGPT_PROJECT_CONTEXT.md
