@@ -38,32 +38,32 @@ const POPULAR_STATES = [
 ];
 
 const SOIL_OPTIONS = [
-  { value: 'alluvial', labelKey: 'profile:soil_types.alluvial', fallback: 'Alluvial (जलोढ़)' },
-  { value: 'black', labelKey: 'profile:soil_types.black', fallback: 'Black / Regur (काली)' },
-  { value: 'red', labelKey: 'profile:soil_types.red', fallback: 'Red & Yellow (लाल)' },
-  { value: 'loamy', labelKey: 'profile:soil_types.loamy', fallback: 'Loamy (दोमट)' },
-  { value: 'sandy', labelKey: 'profile:soil_types.sandy', fallback: 'Sandy (रेतीली)' },
-  { value: 'clayey', labelKey: 'profile:soil_types.clayey', fallback: 'Clayey (चिकनी)' },
+  { value: 'alluvial', labelKey: 'profile:soil_types.alluvial', fallback: 'Alluvial' },
+  { value: 'black', labelKey: 'profile:soil_types.black', fallback: 'Black / Regur' },
+  { value: 'red', labelKey: 'profile:soil_types.red', fallback: 'Red & Yellow' },
+  { value: 'loamy', labelKey: 'profile:soil_types.loamy', fallback: 'Loamy' },
+  { value: 'sandy', labelKey: 'profile:soil_types.sandy', fallback: 'Sandy' },
+  { value: 'clayey', labelKey: 'profile:soil_types.clayey', fallback: 'Clayey' },
 ];
 
 const IRRIGATION_OPTIONS = [
-  { value: 'borewell', labelKey: 'profile:irrigation_types.borewell', fallback: 'Borewell (बोरवेल)' },
-  { value: 'canal', labelKey: 'profile:irrigation_types.canal', fallback: 'Canal (नहर)' },
-  { value: 'well', labelKey: 'profile:irrigation_types.well', fallback: 'Open Well (कुआँ)' },
-  { value: 'drip', labelKey: 'profile:irrigation_types.drip', fallback: 'Drip Irrigation (ड्रिप)' },
-  { value: 'sprinkler', labelKey: 'profile:irrigation_types.sprinkler', fallback: 'Sprinkler (स्प्रिंकलर)' },
-  { value: 'rainfed', labelKey: 'profile:irrigation_types.rainfed', fallback: 'Rainfed (वर्षा आधारित)' },
+  { value: 'borewell', labelKey: 'profile:irrigation_types.borewell', fallback: 'Borewell' },
+  { value: 'canal', labelKey: 'profile:irrigation_types.canal', fallback: 'Canal' },
+  { value: 'well', labelKey: 'profile:irrigation_types.well', fallback: 'Open Well' },
+  { value: 'drip', labelKey: 'profile:irrigation_types.drip', fallback: 'Drip Irrigation' },
+  { value: 'sprinkler', labelKey: 'profile:irrigation_types.sprinkler', fallback: 'Sprinkler' },
+  { value: 'rainfed', labelKey: 'profile:irrigation_types.rainfed', fallback: 'Rainfed' },
 ];
 
 const CROPS_LIST = [
-  { value: 'Wheat', labelKey: 'crop:crops.wheat', fallback: 'Wheat (गेहूं)' },
-  { value: 'Mustard', labelKey: 'crop:crops.mustard', fallback: 'Mustard (सरसों)' },
-  { value: 'Soybean', labelKey: 'crop:crops.soybean', fallback: 'Soybean (सोयाबीन)' },
-  { value: 'Rice', labelKey: 'crop:crops.rice', fallback: 'Rice / Paddy (धान/चावल)' },
-  { value: 'Potato', labelKey: 'crop:crops.potato', fallback: 'Potato (आलू)' },
-  { value: 'Cotton', labelKey: 'crop:crops.cotton', fallback: 'Cotton (कपास)' },
-  { value: 'Maize', labelKey: 'crop:crops.maize', fallback: 'Maize (मक्का)' },
-  { value: 'Sugarcane', labelKey: 'crop:crops.sugarcane', fallback: 'Sugarcane (गन्ना)' },
+  { value: 'Wheat', labelKey: 'crop:crops.wheat', fallback: 'Wheat' },
+  { value: 'Mustard', labelKey: 'crop:crops.mustard', fallback: 'Mustard' },
+  { value: 'Soybean', labelKey: 'crop:crops.soybean', fallback: 'Soybean' },
+  { value: 'Rice', labelKey: 'crop:crops.rice', fallback: 'Rice / Paddy' },
+  { value: 'Potato', labelKey: 'crop:crops.potato', fallback: 'Potato' },
+  { value: 'Cotton', labelKey: 'crop:crops.cotton', fallback: 'Cotton' },
+  { value: 'Maize', labelKey: 'crop:crops.maize', fallback: 'Maize' },
+  { value: 'Sugarcane', labelKey: 'crop:crops.sugarcane', fallback: 'Sugarcane' },
 ];
 
 export default function RegisterPage() {
@@ -254,8 +254,8 @@ export default function RegisterPage() {
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder={
                           role === 'buyer'
-                            ? 'e.g. Vikram Sharma'
-                            : 'e.g. Ramesh Kumar'
+                            ? t('auth.name_placeholder_buyer', { defaultValue: 'Full Name / Company Name' })
+                            : t('auth.name_placeholder_farmer', { defaultValue: 'Full Name' })
                         }
                         required
                         className="w-full pl-9 pr-3 py-2 text-sm border border-sand-200 rounded-xl bg-white text-sand-900 focus:outline-none focus:ring-2 focus:ring-agri-forest-600"
@@ -392,7 +392,7 @@ export default function RegisterPage() {
                         type="text"
                         value={formData.district}
                         onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                        placeholder="Gwalior / Indore / etc."
+                        placeholder={t('auth.district_placeholder', { defaultValue: 'Enter district' })}
                         required
                         className="w-full pl-9 pr-3 py-2 text-sm border border-sand-200 rounded-xl bg-white text-sand-900 focus:outline-none focus:ring-2 focus:ring-agri-forest-600"
                       />
@@ -567,11 +567,11 @@ export default function RegisterPage() {
                         onChange={(e) => setFormData({ ...formData, buyerType: e.target.value })}
                         className="w-full px-3 py-2 text-sm border border-sand-200 rounded-xl bg-white text-sand-900 focus:outline-none focus:ring-2 focus:ring-agri-forest-600"
                       >
-                        <option value="Trader">Trader (व्यापारी)</option>
-                        <option value="Wholesaler">Wholesaler (थोक विक्रेता)</option>
-                        <option value="Food Processor">Food Processor (खाद्य प्रसंस्करणकर्ता)</option>
-                        <option value="FPO">FPO (किसान उत्पादक संगठन)</option>
-                        <option value="Exporter">Exporter (निर्यातक)</option>
+                        <option value="Trader">{t('auth.buyer_types.trader', { defaultValue: 'Trader' })}</option>
+                        <option value="Wholesaler">{t('auth.buyer_types.wholesaler', { defaultValue: 'Wholesaler' })}</option>
+                        <option value="Food Processor">{t('auth.buyer_types.food_processor', { defaultValue: 'Food Processor' })}</option>
+                        <option value="FPO">{t('auth.buyer_types.fpo', { defaultValue: 'FPO (Farmer Producer Org)' })}</option>
+                        <option value="Exporter">{t('auth.buyer_types.exporter', { defaultValue: 'Exporter' })}</option>
                       </select>
                     </div>
                   </div>

@@ -13,7 +13,7 @@ export default function ProfilePage() {
   const { t } = useTranslation('profile');
   const navigate = useNavigate();
   const { farmer, farmProfile, isLoading, isFallback } = useProfile();
-  const { logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -25,29 +25,85 @@ export default function ProfilePage() {
     );
   }
 
-  const activeFarmer = farmer || { name: 'Ramesh', location: { district: 'Gwalior', state: 'Madhya Pradesh', village: 'Morar' } };
-  const activeFarm = farmProfile || { totalArea: 5, soilType: 'alluvial', irrigationSource: 'borewell' };
+  if (!isAuthenticated && !farmer) {
+    return (
+      <div className="space-y-5">
+        <h1 className="text-xl font-bold text-sand-900">{t('title')}</h1>
+        <Card className="p-6 text-center">
+          <div className="w-14 h-14 rounded-full bg-agri-forest-100 flex items-center justify-center text-2xl mx-auto mb-3">
+            👨‍🌾
+          </div>
+          <h2 className="text-base font-bold text-sand-900 mb-1">{t('unauthenticated_title', { defaultValue: 'Welcome to KisanIQ' })}</h2>
+          <p className="text-xs text-sand-600 mb-4 max-w-sm mx-auto">
+            {t('unauthenticated_desc', { defaultValue: 'Log in or register your account to view your farm details, soil reports, and mandi prices.' })}
+          </p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => navigate(ROUTES.LOGIN)}
+              className="px-4 py-2 bg-agri-forest-800 text-white rounded-xl text-xs font-semibold hover:bg-agri-forest-700"
+            >
+              {t('common:buttons.login', { defaultValue: 'Login' })}
+            </button>
+            <button
+              onClick={() => navigate(ROUTES.REGISTER)}
+              className="px-4 py-2 bg-sand-200 text-sand-800 rounded-xl text-xs font-semibold hover:bg-sand-300"
+            >
+              {t('common:buttons.register', { defaultValue: 'Register' })}
+            </button>
+          </div>
+        </Card>
+
+        {/* Settings */}
+        <div>
+          <SectionHeader title={t('settings.title')} icon={<span>⚙️</span>} />
+          <Card>
+            <CardContent className="divide-y divide-sand-200">
+              <button
+                onClick={() => navigate(ROUTES.LANGUAGE_SELECT)}
+                className="w-full flex items-center justify-between py-3 min-h-[48px]"
+              >
+                <div className="flex items-center gap-3">
+                  <Globe className="h-4 w-4 text-sand-500" />
+                  <span className="text-sm font-medium text-sand-900">{t('settings.language')}</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-sand-400" />
+              </button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const displayName = farmer?.name || user?.name || t('unnamed_user', { defaultValue: 'Farmer' });
+  const displayLocation = farmer?.location?.district
+    ? `${farmer.location.district}${farmer.location.state ? `, ${farmer.location.state}` : ''}`
+    : farmer?.location?.state || t('common:states.not_specified', { defaultValue: 'Not specified' });
 
   const infoItems = [
     {
       icon: MapPin,
       label: t('fields.location'),
-      value: `${activeFarmer.location?.district || 'Gwalior'}, ${activeFarmer.location?.state || 'Madhya Pradesh'}`,
+      value: displayLocation,
     },
     {
       icon: Mountain,
       label: t('fields.farm_size'),
-      value: `${activeFarm.totalArea || 5} acres`,
+      value: farmProfile?.totalArea ? `${farmProfile.totalArea} acres` : t('common:states.not_specified', { defaultValue: 'Not specified' }),
     },
     {
       icon: Wheat,
       label: t('fields.main_crop'),
-      value: 'Wheat (HD-2967)',
+      value: (farmProfile?.crops && farmProfile.crops.length > 0)
+        ? farmProfile.crops.join(', ')
+        : t('common:states.not_specified', { defaultValue: 'Not specified' }),
     },
     {
       icon: Droplets,
       label: t('fields.irrigation'),
-      value: t(`irrigation_types.${activeFarm.irrigationSource || 'borewell'}`, { defaultValue: activeFarm.irrigationSource || 'Borewell' }),
+      value: farmProfile?.irrigationSource
+        ? t(`irrigation_types.${farmProfile.irrigationSource}`, { defaultValue: farmProfile.irrigationSource })
+        : t('common:states.not_specified', { defaultValue: 'Not specified' }),
     },
   ];
 
@@ -71,11 +127,10 @@ export default function ProfilePage() {
               👨‍🌾
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-sand-900">{activeFarmer.name}</h2>
+              <h2 className="text-lg font-bold text-sand-900">{displayName}</h2>
               <p className="text-sm text-sand-600 flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
-                {activeFarmer.location?.village ? `${activeFarmer.location.village}, ` : ''}
-                {activeFarmer.location?.district || 'Gwalior'}, {activeFarmer.location?.state || 'Madhya Pradesh'}
+                {displayLocation}
               </p>
             </div>
             {isAuthenticated && (

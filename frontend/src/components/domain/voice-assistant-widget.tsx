@@ -43,7 +43,9 @@ export function VoiceAssistantWidget() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [inputText, setInputText] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
-  const [voiceLang, setVoiceLang] = useState<'mr-IN' | 'hi-IN' | 'en-IN'>('mr-IN');
+  const [voiceLang, setVoiceLang] = useState<'mr-IN' | 'hi-IN' | 'en-IN'>(
+    i18n.language === 'en' ? 'en-IN' : i18n.language === 'mr' ? 'mr-IN' : 'hi-IN'
+  );
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [pendingAction, setPendingAction] = useState<any>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
@@ -53,13 +55,13 @@ export function VoiceAssistantWidget() {
 
   // Sync voice language with i18n language
   useEffect(() => {
-    const currentLang = i18n.language || 'mr';
-    if (currentLang === 'hi') {
-      setVoiceLang('hi-IN');
+    const currentLang = i18n.language || 'hi';
+    if (currentLang === 'mr') {
+      setVoiceLang('mr-IN');
     } else if (currentLang === 'en') {
       setVoiceLang('en-IN');
     } else {
-      setVoiceLang('mr-IN');
+      setVoiceLang('hi-IN');
     }
   }, [i18n.language]);
 
@@ -104,22 +106,14 @@ export function VoiceAssistantWidget() {
     if (speechError) {
       setAssistantState('ERROR');
       if (speechError === 'mic_permission_denied') {
-        setErrorMessage(
-          voiceLang === 'mr-IN'
-            ? 'मायक्रोफोन परवानगी नाकारली गेली आहे. कृपया ब्राउझरमध्ये परवानगी द्या.'
-            : 'Microphone permission denied.'
-        );
+        setErrorMessage(t('errors.mic_permission_denied'));
       } else if (speechError === 'no_speech_detected') {
-        setErrorMessage(
-          voiceLang === 'mr-IN'
-            ? 'काहीही ऐकू आले नाही. कृपया पुन्हा बोला.'
-            : 'No speech heard. Please tap again.'
-        );
+        setErrorMessage(t('errors.no_speech_detected'));
       } else {
         setErrorMessage(speechError);
       }
     }
-  }, [speechError, voiceLang]);
+  }, [speechError, t]);
 
   // Scroll to bottom of chat
   useEffect(() => {
@@ -192,11 +186,7 @@ export function VoiceAssistantWidget() {
     } catch (err: any) {
       console.error('Assistant error:', err);
       setAssistantState('ERROR');
-      setErrorMessage(
-        voiceLang === 'mr-IN'
-          ? `माहिती मिळवताना त्रुटी आली (${err.message || 'सर्व्हर एरर'}).`
-          : `Error contacting assistant: ${err.message}`
-      );
+      setErrorMessage(t('errors.network_error', { defaultValue: err.message || 'Error contacting assistant' }));
     }
   };
 
@@ -205,7 +195,7 @@ export function VoiceAssistantWidget() {
     setAssistantState('PROCESSING');
     try {
       const res = await assistantApi.confirmAction(pendingAction.type, pendingAction.payload);
-      setActionSuccess(res.message || 'कृती यशस्वीरित्या पूर्ण झाली!');
+      setActionSuccess(res.message || t('actions.completed'));
       setPendingAction(null);
       setAssistantState('IDLE');
 
@@ -221,19 +211,18 @@ export function VoiceAssistantWidget() {
         speak(res.message, { lang: voiceLang });
       }
     } catch (err: any) {
-      setErrorMessage(`Action failed: ${err.message}`);
+      setErrorMessage(err.message || t('status_error'));
       setAssistantState('ERROR');
     }
   };
 
-  const quickQuestionsMr = [
-    'माझ्या मातीचा pH किती आहे?',
-    'शेतात नायट्रोजन किती आहे?',
-    'माती परीक्षण कसे करायचे?',
-    'कोणतं खत टाकावं?',
-    'उद्या पाऊस पडेल का?',
-    'गव्हाचा बाजारभाव काय आहे?',
-    'माल कुठे विकू?',
+  const quickQuestions = [
+    t('quick_questions.crop_problem', { defaultValue: 'My crop has a problem?' }),
+    t('quick_questions.rain_tomorrow', { defaultValue: 'Will it rain tomorrow?' }),
+    t('quick_questions.when_water', { defaultValue: 'When should I water?' }),
+    t('quick_questions.crop_health', { defaultValue: 'How is my crop?' }),
+    t('quick_questions.when_sell', { defaultValue: 'When should I sell?' }),
+    t('quick_questions.next_crop', { defaultValue: 'What crop should I plant next?' }),
   ];
 
   return (
@@ -246,7 +235,7 @@ export function VoiceAssistantWidget() {
             toggleListen();
           }}
           className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 flex items-center gap-2.5 px-4 py-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full shadow-2xl transition-all duration-300 transform active:scale-95 border-2 border-emerald-400 group"
-          aria-label="कृषी सहाय्यक आवाज सुरू करा"
+          aria-label={t('fab_aria')}
         >
           <div className="relative">
             <span className="text-xl">🎙️</span>
@@ -256,7 +245,7 @@ export function VoiceAssistantWidget() {
             </span>
           </div>
           <span className="font-semibold text-sm md:text-base tracking-wide">
-            कृषी सहाय्यक
+            {t('fab_label')}
           </span>
         </button>
       )}
@@ -275,10 +264,10 @@ export function VoiceAssistantWidget() {
                 <span className="text-2xl p-1 bg-white/10 rounded-full">🎙️</span>
                 <div>
                   <h2 className="font-bold text-base leading-tight">
-                    KisanIQ कृषी सहाय्यक
+                    {t('widget_title')}
                   </h2>
                   <p className="text-xs text-emerald-200">
-                    मराठी व्हॉईस असिस्टंट (Voice Intelligence)
+                    {t('widget_subtitle')}
                   </p>
                 </div>
               </div>
@@ -292,7 +281,7 @@ export function VoiceAssistantWidget() {
                     )
                   }
                   className="text-xs px-2.5 py-1 bg-emerald-950/60 hover:bg-emerald-950 text-emerald-200 rounded-lg border border-emerald-500/40 transition"
-                  title="भाषा बदला (Change Voice Language)"
+                  title={t('voice_settings.language')}
                 >
                   {voiceLang === 'mr-IN'
                     ? 'मराठी'
@@ -312,7 +301,7 @@ export function VoiceAssistantWidget() {
                       ? 'bg-emerald-600/60 text-white'
                       : 'bg-emerald-950 text-emerald-400 opacity-60'
                   }`}
-                  title={autoSpeak ? 'आवाज सुरू आहे (Mute)' : 'आवाज बंद आहे (Unmute)'}
+                  title={t('voice_settings.auto_speak')}
                 >
                   {autoSpeak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
                 </button>
@@ -364,29 +353,29 @@ export function VoiceAssistantWidget() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
                     </span>
-                    <span>मायक्रोफोन चालू आहे... स्पष्ट बोला (Listening)</span>
+                    <span>{t('listening')}</span>
                   </>
                 )}
                 {assistantState === 'PROCESSING' && (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-700" />
-                    <span>किसानIQ उत्तर तयार करत आहे... (Processing)</span>
+                    <span>{t('thinking')}</span>
                   </>
                 )}
                 {assistantState === 'SPEAKING' && (
                   <>
                     <Volume2 className="h-3.5 w-3.5 text-emerald-700 animate-pulse" />
-                    <span>उत्तर ऐकवत आहे... (Speaking)</span>
+                    <span>{t('status_speaking')}</span>
                   </>
                 )}
                 {assistantState === 'ERROR' && (
                   <>
                     <AlertCircle className="h-3.5 w-3.5 text-red-700" />
-                    <span>{errorMessage || 'त्रुटी आढळली'}</span>
+                    <span>{errorMessage || t('status_error')}</span>
                   </>
                 )}
                 {assistantState === 'IDLE' && (
-                  <span>स्थिती: तयार (बोलण्यासाठी खालील माईक दाबा)</span>
+                  <span>{t('status_ready')}</span>
                 )}
               </div>
 
@@ -395,7 +384,7 @@ export function VoiceAssistantWidget() {
                   onClick={stopSpeaking}
                   className="underline text-[11px] font-semibold text-emerald-800"
                 >
-                  थांबवा
+                  {t('stop')}
                 </button>
               )}
               {assistantState === 'ERROR' && (
@@ -403,7 +392,7 @@ export function VoiceAssistantWidget() {
                   onClick={toggleListen}
                   className="underline text-[11px] font-semibold text-red-800 flex items-center gap-1"
                 >
-                  <RefreshCw className="h-3 w-3" /> पुन्हा करा
+                  <RefreshCw className="h-3 w-3" /> {t('retry')}
                 </button>
               )}
             </div>
@@ -418,19 +407,18 @@ export function VoiceAssistantWidget() {
                 <div className="bg-white rounded-xl p-4 border border-sand-200 shadow-sm space-y-3">
                   <div className="flex items-center gap-2 text-emerald-800 font-semibold text-sm">
                     <Sparkles className="h-4 w-4" />
-                    <span>नमस्कार शेतकरी बंधू!</span>
+                    <span>{t('welcome_title')}</span>
                   </div>
                   <p className="text-xs text-sand-700 leading-relaxed">
-                    मी KisanIQ कृषी सहाय्यक आहे. तुम्ही हवामान, माती परीक्षण (pH, नत्र, खते),
-                    बाजारभाव आणि पीक रोगांबद्दल थेट <strong>मराठीत बोलून</strong> विचारू शकता.
+                    {t('welcome_desc')}
                   </p>
 
                   <div className="pt-2">
                     <p className="text-[11px] font-semibold text-sand-500 mb-2 uppercase tracking-wider">
-                      उदाहरणासाठी खालील प्रश्न विचारा:
+                      {t('example_questions_title')}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      {quickQuestionsMr.map((q, idx) => (
+                      {quickQuestions.map((q, idx) => (
                         <button
                           key={idx}
                           onClick={() => handleUserQuery(q)}
@@ -468,9 +456,9 @@ export function VoiceAssistantWidget() {
                         <button
                           onClick={() => speak(msg.text, { lang: voiceLang })}
                           className="flex items-center gap-1 hover:text-emerald-700 transition"
-                          title="पुन्हा ऐका"
+                          title={t('speak_tooltip')}
                         >
-                          <Volume2 className="h-3.5 w-3.5" /> ऐका
+                          <Volume2 className="h-3.5 w-3.5" /> {t('replay')}
                         </button>
                       </div>
                     )}
@@ -492,7 +480,7 @@ export function VoiceAssistantWidget() {
                 <div className="flex justify-start">
                   <div className="bg-white border border-sand-200 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center gap-2 text-xs text-sand-600">
                     <Loader2 className="h-4 w-4 animate-spin text-emerald-700" />
-                    <span>उत्तर शोधत आहे...</span>
+                    <span>{t('status_processing')}</span>
                   </div>
                 </div>
               )}
@@ -502,23 +490,23 @@ export function VoiceAssistantWidget() {
                 <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-3.5 shadow-md space-y-2.5">
                   <div className="flex items-center gap-2 text-amber-900 font-semibold text-sm">
                     <AlertCircle className="h-4 w-4 text-amber-700" />
-                    <span>कृती पुष्टीकरण (Action Confirmation)</span>
+                    <span>{t('action_confirmation')}</span>
                   </div>
                   <p className="text-xs text-amber-800">
-                    {pendingAction.summary || 'ही कृती पूर्ण करावी का?'}
+                    {pendingAction.summary || t('action_confirm_question')}
                   </p>
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={handleConfirmAction}
                       className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold shadow-sm active:scale-95 transition"
                     >
-                      होय, पूर्ण करा
+                      {t('action_yes')}
                     </button>
                     <button
                       onClick={() => setPendingAction(null)}
                       className="px-3 py-1.5 bg-white border border-sand-300 text-sand-700 hover:bg-sand-50 rounded-lg text-xs font-medium transition"
                     >
-                      रद्द करा
+                      {t('action_no')}
                     </button>
                   </div>
                 </div>
@@ -547,11 +535,7 @@ export function VoiceAssistantWidget() {
                       ? 'bg-amber-600 text-white ring-4 ring-amber-200'
                       : 'bg-emerald-700 hover:bg-emerald-800 text-white hover:scale-105'
                   }`}
-                  title={
-                    assistantState === 'LISTENING'
-                      ? 'बोलणे थांबवा'
-                      : 'मराठीत बोलण्यासाठी दाबा'
-                  }
+                  title={assistantState === 'LISTENING' ? t('stop') : t('voice_button')}
                 >
                   {assistantState === 'LISTENING' ? (
                     <Mic className="h-7 w-7" />
@@ -564,10 +548,10 @@ export function VoiceAssistantWidget() {
               </div>
               <p className="text-center text-[11px] text-sand-500 font-medium">
                 {assistantState === 'LISTENING'
-                  ? '🔴 ऐकत आहे... (थांबवण्यासाठी पुन्हा दाबा)'
+                  ? t('mic_listening_hint')
                   : assistantState === 'SPEAKING'
-                  ? '🔊 उत्तर बोलत आहे'
-                  : '🎙️ बोलण्यासाठी वरील बटण दाबा'}
+                  ? t('mic_speaking_hint')
+                  : t('mic_idle_hint')}
               </p>
 
               {/* Text input fallback */}
@@ -582,7 +566,7 @@ export function VoiceAssistantWidget() {
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="किंवा प्रश्न येथे मराठीत टाइप करा..."
+                  placeholder={t('type_placeholder')}
                   className="flex-1 px-3.5 py-2 text-sm border border-sand-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-sand-50 text-sand-900"
                 />
                 <button

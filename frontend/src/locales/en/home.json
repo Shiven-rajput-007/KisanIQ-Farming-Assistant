@@ -16,7 +16,9 @@
       "haze": "Haze",
       "hot": "Hot",
       "cold": "Cold"
-    }
+    },
+    "unavailable_title": "Weather Data Unavailable",
+    "unavailable_desc": "Unable to contact live meteorological servers. Please try again later."
   },
   "aaj_kya_karein": {
     "title": "TODAY'S ACTIONS",

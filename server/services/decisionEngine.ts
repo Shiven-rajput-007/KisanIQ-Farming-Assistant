@@ -86,8 +86,8 @@ export class DecisionEngine {
         whyExplanation: {
           summaryKey: 'Personalized Agronomic Advisory',
           dataPoints: [
-            { icon: '📍', labelKey: 'Location', value: farmer.district || 'Gwalior' },
-            { icon: '🌱', labelKey: 'Soil type', value: farm.soil_type || 'Alluvial' },
+            { icon: '📍', labelKey: 'Location', value: farmer.district || farmer.state || 'Unspecified' },
+            { icon: '🌱', labelKey: 'Soil type', value: farm?.soil_type || 'Unspecified' },
           ],
           conclusionKey: 'Personalized agronomic guidance requires your verified crop type and growth stage.',
         },

@@ -41,10 +41,10 @@ function WeatherCard({ weather, farmingNote, className, onClick }: WeatherCardPr
             <div>
               <p className="text-xs font-semibold text-sand-500 uppercase tracking-wider">{t('weather.title')}</p>
               <p className="text-sm font-bold text-sand-800 mt-0.5">
-                {t('weather.unavailable_title', { defaultValue: 'हवामान माहिती सध्या अनुपलब्ध आहे' })}
+                {t('weather.unavailable_title', { defaultValue: 'Weather data temporarily unavailable' })}
               </p>
               <p className="text-xs text-sand-500 mt-0.5">
-                {t('weather.unavailable_desc', { defaultValue: 'थेट हवामान सर्व्हरशी संपर्क होत नाही. कृपया नंतर पुन्हा प्रयत्न करा.' })}
+                {t('weather.unavailable_desc', { defaultValue: 'Unable to connect to live meteorological servers. Please try again later.' })}
               </p>
             </div>
           </div>

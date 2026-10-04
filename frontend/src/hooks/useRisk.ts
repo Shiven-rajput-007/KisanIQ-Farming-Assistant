@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { riskApi } from '@/api';
 import type { RiskAssessment } from '@/types';
+import { useActiveLocation } from '@/context/LocationContext';
 
 export function useRisk() {
+  const { location } = useActiveLocation();
   const [data, setData] = useState<RiskAssessment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +14,10 @@ export function useRisk() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await riskApi.getAssessment();
+      const res = await riskApi.getAssessment(
+        location.latitude ?? undefined,
+        location.longitude ?? undefined
+      );
       setData(res.assessment);
       setIsFallback(false);
     } catch (err: any) {
@@ -23,7 +28,7 @@ export function useRisk() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [location.latitude, location.longitude]);
 
   useEffect(() => {
     fetchRisk();

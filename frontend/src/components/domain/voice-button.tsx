@@ -28,7 +28,7 @@ function VoiceButton({ disabled = false, onClick, className }: VoiceButtonProps)
         {t('voice_button')}
       </span>
       <span className="text-[11px] text-emerald-200">
-        मराठी व्हॉईस इनपुट
+        {t('voice_subtitle', { defaultValue: 'Voice Input' })}
       </span>
     </button>
   );

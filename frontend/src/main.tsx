@@ -10,7 +10,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <div className="min-h-screen flex items-center justify-center bg-sand-50">
         <div className="text-center">
           <div className="text-2xl font-bold text-agri-forest-800 mb-2">KisanIQ</div>
-          <div className="text-sm text-sand-600">Loading... / लोड हो रहा है...</div>
+          <div className="text-sm text-sand-600">Loading...</div>
         </div>
       </div>
     }>

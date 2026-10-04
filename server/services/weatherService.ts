@@ -81,11 +81,15 @@ function mapWeatherApiCondition(conditionText: string = ''): { condition: string
 
 export class WeatherService {
   public getWeatherApiBaseUrl(): string {
-    return (process.env.WEATHERAPI_BASE_URL || 'https://api.weatherapi.com/v1').replace(/\/$/, '');
+    return (process.env.WEATHERAPI_BASE_URL || 'https://api.weatherapi.com/v1').replace(/\/+$/, '');
   }
 
   public getOpenMeteoBaseUrl(): string {
-    return (process.env.OPEN_METEO_BASE_URL || 'https://api.open-meteo.com').replace(/\/$/, '');
+    let url = (process.env.OPEN_METEO_BASE_URL || 'https://api.open-meteo.com').trim().replace(/\/+$/, '');
+    if (url.endsWith('/v1')) {
+      url = url.substring(0, url.length - 3);
+    }
+    return url;
   }
 
   /**
@@ -152,10 +156,10 @@ export class WeatherService {
   }
 
   /**
-   * Two-provider weather architecture:
+   * Genuine meteorological architecture:
    * 1. Check fresh cache (30 min)
-   * 2. Primary: WeatherAPI.com (if WEATHER_API_KEY configured)
-   * 3. Secondary: Open-Meteo API
+   * 2. Primary: Open-Meteo API (via OPEN_METEO_BASE_URL)
+   * 3. Secondary: WeatherAPI.com (if WEATHER_API_KEY configured)
    * 4. Archived cache fallback (24 hours)
    * 5. Strictly throw WEATHER_UNAVAILABLE — zero fake numbers
    */
@@ -219,7 +223,146 @@ export class WeatherService {
       console.warn('[WeatherService] Cache lookup notice:', e);
     }
 
-    // 3. Primary Provider: WeatherAPI.com (if WEATHER_API_KEY is present)
+    // 3. Primary Provider: Open-Meteo API
+    const baseCandidate = this.getOpenMeteoBaseUrl();
+    const candidateUrls = [
+      `${baseCandidate}/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata`
+    ];
+    if (baseCandidate !== 'https://api.open-meteo.com') {
+      candidateUrls.push(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata`
+      );
+    }
+
+    let openMeteoResponse: Response | null = null;
+    let successfulBase = baseCandidate;
+
+    for (const testUrl of candidateUrls) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const resp = await fetch(testUrl, {
+            headers: {
+              'User-Agent': 'KisanIQ-Farming-Assistant/2.0 (contact@kisaniq.in)',
+              'Accept': 'application/json',
+            },
+            signal: AbortSignal.timeout(12000),
+          });
+          if (resp.ok) {
+            openMeteoResponse = resp;
+            successfulBase = testUrl.startsWith('https://api.open-meteo.com') ? 'https://api.open-meteo.com' : baseCandidate;
+            break;
+          }
+        } catch (err: any) {
+          if (attempt === 1) {
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          }
+        }
+      }
+      if (openMeteoResponse && openMeteoResponse.ok) break;
+    }
+
+    if (openMeteoResponse && openMeteoResponse.ok) {
+      try {
+        const data: any = await openMeteoResponse.json();
+        const currentRaw = data.current || {};
+        const dailyRaw = data.daily || {};
+
+        const temp = currentRaw.temperature_2m !== undefined ? Math.round(Number(currentRaw.temperature_2m)) : null;
+        const feelsLike = currentRaw.apparent_temperature !== undefined ? Math.round(Number(currentRaw.apparent_temperature)) : null;
+        const humidity = currentRaw.relative_humidity_2m !== undefined ? Math.round(Number(currentRaw.relative_humidity_2m)) : null;
+        const windSpeed = currentRaw.wind_speed_10m !== undefined ? Math.round(Number(currentRaw.wind_speed_10m)) : null;
+        const rainProbability =
+          dailyRaw.precipitation_probability_max?.[0] !== undefined
+            ? Number(dailyRaw.precipitation_probability_max[0])
+            : null;
+        const expectedRainfall =
+          currentRaw.precipitation !== undefined ? Number(currentRaw.precipitation) : null;
+
+        const conditionInfo = mapWmoCode(currentRaw.weather_code);
+
+        const current: WeatherData = {
+          temperature: temp,
+          feelsLike,
+          condition: conditionInfo.condition,
+          conditionKey: conditionInfo.conditionKey,
+          humidity,
+          windSpeed,
+          rainProbability,
+          expectedRainfall,
+          lastUpdated: new Date().toISOString(),
+        };
+
+        const forecast: WeatherForecast[] = [];
+        const dates: string[] = dailyRaw.time || [];
+        for (let i = 0; i < Math.min(dates.length, 3); i++) {
+          const dStr = dates[i];
+          const dateObj = new Date(dStr);
+          const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+          const dayCode = dailyRaw.weather_code?.[i];
+          const dayCond = mapWmoCode(dayCode);
+
+          forecast.push({
+            date: dStr,
+            dayName,
+            high: dailyRaw.temperature_2m_max?.[i] !== undefined ? Math.round(Number(dailyRaw.temperature_2m_max[i])) : null,
+            low: dailyRaw.temperature_2m_min?.[i] !== undefined ? Math.round(Number(dailyRaw.temperature_2m_min[i])) : null,
+            condition: dayCond.condition,
+            conditionKey: dayCond.conditionKey,
+            rainProbability:
+              dailyRaw.precipitation_probability_max?.[i] !== undefined
+                ? Number(dailyRaw.precipitation_probability_max[i])
+                : null,
+            expectedRainfall:
+              dailyRaw.precipitation_sum?.[i] !== undefined ? Number(dailyRaw.precipitation_sum[i]) : null,
+            humidity,
+            windSpeed,
+          });
+        }
+
+        const tomorrowRainProb = dailyRaw.precipitation_probability_max?.[1] !== undefined
+          ? Number(dailyRaw.precipitation_probability_max[1])
+          : null;
+        const tomorrowRainAmount = dailyRaw.precipitation_sum?.[1] !== undefined
+          ? Number(dailyRaw.precipitation_sum[1])
+          : null;
+
+        const implications = this.generateImplications(temp, humidity, tomorrowRainProb, tomorrowRainAmount);
+
+        // Save to cache
+        try {
+          await db.query(
+            `INSERT INTO weather_cache (id, latitude, longitude, current_json, forecast_json, implications_json, cached_at)
+             VALUES ($1, $2, $3, $4, $5, $6, NOW())
+             ON CONFLICT (id) DO UPDATE SET
+               current_json = EXCLUDED.current_json,
+               forecast_json = EXCLUDED.forecast_json,
+               implications_json = EXCLUDED.implications_json,
+               cached_at = NOW()`,
+            [cacheKey, lat, lon, JSON.stringify(current), JSON.stringify(forecast), JSON.stringify(implications)]
+          );
+        } catch (saveErr) {
+          console.warn('[WeatherService] Cache save notice:', saveErr);
+        }
+
+        return {
+          current,
+          forecast,
+          implications,
+          metadata: {
+            dataSource: 'Open-Meteo Weather API',
+            provider: 'open-meteo',
+            apiUrl: successfulBase,
+            lastUpdated: new Date().toISOString(),
+            isCached: false,
+            isStale: false,
+          },
+        };
+      } catch (parseErr: any) {
+        console.warn('[WeatherService] Open-Meteo parsing error:', parseErr.message);
+      }
+    }
+
+    // 4. Secondary Provider: WeatherAPI.com (if WEATHER_API_KEY is present)
     const weatherApiKey = process.env.WEATHER_API_KEY;
     if (weatherApiKey && weatherApiKey.trim() !== '') {
       try {
@@ -316,132 +459,7 @@ export class WeatherService {
           }
         }
       } catch (wApiErr: any) {
-        console.warn('[WeatherService] Primary WeatherAPI.com failed, attempting secondary provider:', wApiErr.message);
-      }
-    }
-
-    // 4. Secondary Provider: Open-Meteo API
-    const openMeteoBase = this.getOpenMeteoBaseUrl();
-    const openMeteoUrl = `${openMeteoBase}/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=Asia%2FKolkata`;
-
-    let openMeteoResponse: Response | null = null;
-    let openMeteoError: any = null;
-
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        openMeteoResponse = await fetch(openMeteoUrl, { signal: AbortSignal.timeout(12000) });
-        if (openMeteoResponse.ok) {
-          openMeteoError = null;
-          break;
-        } else {
-          openMeteoError = new Error(`Open-Meteo returned status ${openMeteoResponse.status}`);
-        }
-      } catch (err: any) {
-        openMeteoError = err;
-        if (attempt === 1) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-      }
-    }
-
-    if (openMeteoResponse && openMeteoResponse.ok) {
-      try {
-        const data: any = await openMeteoResponse.json();
-        const currentRaw = data.current || {};
-        const dailyRaw = data.daily || {};
-
-        const temp = currentRaw.temperature_2m !== undefined ? Math.round(Number(currentRaw.temperature_2m)) : null;
-        const feelsLike = currentRaw.apparent_temperature !== undefined ? Math.round(Number(currentRaw.apparent_temperature)) : null;
-        const humidity = currentRaw.relative_humidity_2m !== undefined ? Math.round(Number(currentRaw.relative_humidity_2m)) : null;
-        const windSpeed = currentRaw.wind_speed_10m !== undefined ? Math.round(Number(currentRaw.wind_speed_10m)) : null;
-        const rainProbability =
-          dailyRaw.precipitation_probability_max?.[0] !== undefined
-            ? Number(dailyRaw.precipitation_probability_max[0])
-            : null;
-        const expectedRainfall =
-          currentRaw.precipitation !== undefined ? Number(currentRaw.precipitation) : null;
-
-        const conditionInfo = mapWmoCode(currentRaw.weather_code);
-
-        const current: WeatherData = {
-          temperature: temp,
-          feelsLike,
-          condition: conditionInfo.condition,
-          conditionKey: conditionInfo.conditionKey,
-          humidity,
-          windSpeed,
-          rainProbability,
-          expectedRainfall,
-          lastUpdated: new Date().toISOString(),
-        };
-
-        const forecast: WeatherForecast[] = [];
-        const dates: string[] = dailyRaw.time || [];
-        for (let i = 0; i < Math.min(dates.length, 3); i++) {
-          const dStr = dates[i];
-          const dateObj = new Date(dStr);
-          const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-          const dayCode = dailyRaw.weather_code?.[i];
-          const dayCond = mapWmoCode(dayCode);
-
-          forecast.push({
-            date: dStr,
-            dayName,
-            high: dailyRaw.temperature_2m_max?.[i] !== undefined ? Math.round(Number(dailyRaw.temperature_2m_max[i])) : null,
-            low: dailyRaw.temperature_2m_min?.[i] !== undefined ? Math.round(Number(dailyRaw.temperature_2m_min[i])) : null,
-            condition: dayCond.condition,
-            conditionKey: dayCond.conditionKey,
-            rainProbability:
-              dailyRaw.precipitation_probability_max?.[i] !== undefined
-                ? Number(dailyRaw.precipitation_probability_max[i])
-                : null,
-            expectedRainfall:
-              dailyRaw.precipitation_sum?.[i] !== undefined ? Number(dailyRaw.precipitation_sum[i]) : null,
-            humidity,
-            windSpeed,
-          });
-        }
-
-        const tomorrowRainProb = dailyRaw.precipitation_probability_max?.[1] !== undefined
-          ? Number(dailyRaw.precipitation_probability_max[1])
-          : null;
-        const tomorrowRainAmount = dailyRaw.precipitation_sum?.[1] !== undefined
-          ? Number(dailyRaw.precipitation_sum[1])
-          : null;
-
-        const implications = this.generateImplications(temp, humidity, tomorrowRainProb, tomorrowRainAmount);
-
-        // Save to cache
-        try {
-          await db.query(
-            `INSERT INTO weather_cache (id, latitude, longitude, current_json, forecast_json, implications_json, cached_at)
-             VALUES ($1, $2, $3, $4, $5, $6, NOW())
-             ON CONFLICT (id) DO UPDATE SET
-               current_json = EXCLUDED.current_json,
-               forecast_json = EXCLUDED.forecast_json,
-               implications_json = EXCLUDED.implications_json,
-               cached_at = NOW()`,
-            [cacheKey, lat, lon, JSON.stringify(current), JSON.stringify(forecast), JSON.stringify(implications)]
-          );
-        } catch (saveErr) {
-          console.warn('[WeatherService] Cache save notice:', saveErr);
-        }
-
-        return {
-          current,
-          forecast,
-          implications,
-          metadata: {
-            dataSource: 'Open-Meteo Weather API',
-            provider: 'open-meteo',
-            apiUrl: openMeteoBase,
-            lastUpdated: new Date().toISOString(),
-            isCached: false,
-            isStale: false,
-          },
-        };
-      } catch (parseErr: any) {
-        console.warn('[WeatherService] Open-Meteo parsing error:', parseErr.message);
+        console.warn('[WeatherService] Secondary WeatherAPI.com failed:', wApiErr.message);
       }
     }
 

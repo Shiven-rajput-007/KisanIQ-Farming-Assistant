@@ -26,7 +26,10 @@
   "status": {
     "low": "Deficient / Low",
     "optimal": "Optimal / Good",
-    "high": "High / Excess"
+    "high": "High / Excess",
+    "medium": "Medium / Adequate",
+    "normal": "Normal",
+    "current": "Current"
   },
   "tracking_stages": {
     "REQUESTED": "Request Submitted",
@@ -86,5 +89,50 @@
     "chart_phosphorus": "Phosphorus (P) Trend",
     "chart_potassium": "Potassium (K) Trend",
     "chart_ph": "pH Trend"
+  },
+  "sensor": {
+    "title": "Live On-Field IoT Sensor",
+    "badge": "DEMO SENSOR DATA",
+    "moisture": "Soil Moisture",
+    "soil_temp": "Soil Temperature",
+    "battery": "Sensor Battery",
+    "last_refresh": "Last Update",
+    "no_irrigation": "No irrigation needed",
+    "optimal_temp": "Optimal temperature",
+    "active": "Active (Online)",
+    "node_name": "Node-01 (North Field)",
+    "just_now": "Just now (10m)",
+    "note": "* Note: Sensor data is for real-time on-field moisture and temperature monitoring. Consult the official accredited lab report above for statutory fertilizer recommendations."
+  },
+  "empty_report": {
+    "title": "No Soil Health Report Found",
+    "desc": "Book an accredited laboratory test to receive certified soil nutrient analysis and tailored fertilizer advisories.",
+    "cta": "Book New Soil Test"
+  },
+  "advice": {
+    "title": "Scientific Agronomist Advisory",
+    "deficiency_prefix": "Primary Deficiency: Low Nitrogen in soil (260 kg/ha)",
+    "deficiency_desc": "Due to low nitrogen levels observed in the soil report, vegetative growth may slow down. Apply 30% urea at sowing and the remaining dose with irrigation after 25-30 days.",
+    "plan_title": "Crop Action Plan:",
+    "organic_manure_title": "Organic Manure:",
+    "organic_manure_desc": "Incorporate 2-3 tonnes per acre of well-decomposed FYM or vermicompost to enhance organic carbon.",
+    "balanced_npk_title": "Balanced NPK:",
+    "balanced_npk_desc": "Phosphorus and Potassium are in optimal balance; avoid excess synthetic application to save input costs.",
+    "micronutrients_title": "Micronutrients:",
+    "micronutrients_desc": "Apply foliar zinc sulphate spray during the flowering growth phase."
+  },
+  "trends": {
+    "title": "Soil Health Trends & Comparison",
+    "subtitle": "Comparison of Nitrogen, Phosphorus, Potassium, and pH across previous 3 seasons.",
+    "insight_title": "Fertility Improvement Observation:",
+    "insight_desc": "Continuous farmyard manure and balanced NPK application increased available nitrogen by +40 kg/ha over the past year. Organic carbon increased from 0.38% to 0.45%, improving soil water-retention capacity."
+  },
+  "certificate": {
+    "title": "Official Soil Health Certificate",
+    "lab_header": "MAHADHAN SOIL TESTING & RESEARCH LABORATORY",
+    "accreditation_desc": "Accredited by NABL (TC-7890) & Ministry of Agriculture",
+    "verified_sealed": "VERIFIED & SEALED",
+    "signatory": "Authorized Signatory: Dr. V. S. Deshmukh, Chief Agronomist",
+    "scheme_note": "Digitally verified and stamped under Indian Agricultural Soil Health Card scheme."
   }
 }

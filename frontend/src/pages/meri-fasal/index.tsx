@@ -79,7 +79,7 @@ export default function MeriFasalPage() {
                 type="text"
                 value={newCropName}
                 onChange={(e) => setNewCropName(e.target.value)}
-                placeholder="e.g. Mustard / सरसों"
+                placeholder={t('crop_name_placeholder', { defaultValue: 'e.g. Wheat, Mustard...' })}
                 className="flex-1 px-3 py-2 border border-sand-200 rounded-lg text-sm bg-white"
                 required
               />

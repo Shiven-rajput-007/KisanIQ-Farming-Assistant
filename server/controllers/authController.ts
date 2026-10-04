@@ -17,16 +17,16 @@ export async function register(req: Request, res: Response): Promise<void> {
       address,
       city,
       village,
-      district = 'Gwalior',
-      state = 'Madhya Pradesh',
-      pincode = '474001',
+      district,
+      state,
+      pincode,
       latitude,
       longitude,
       language = 'hi',
       // Farmer specific fields
       farmSize,
-      soilType = 'alluvial',
-      irrigationSource = 'borewell',
+      soilType,
+      irrigationSource,
       mainCrop,
       // Buyer specific fields
       companyName,
@@ -34,6 +34,12 @@ export async function register(req: Request, res: Response): Promise<void> {
       gstin,
       purchaseInterests,
     } = req.body;
+
+    const cleanDistrict = district ? district.trim() : null;
+    const cleanState = state ? state.trim() : null;
+    const cleanPincode = pincode ? pincode.trim() : null;
+    const cleanSoil = soilType ? soilType.trim() : null;
+    const cleanIrrigation = irrigationSource ? irrigationSource.trim() : null;
 
     if (!phone || !password || !name) {
       res.status(400).json({ success: false, error: 'Phone, password, and name are required' });
@@ -76,7 +82,7 @@ export async function register(req: Request, res: Response): Promise<void> {
         name.trim(),
         userRole,
         address || '',
-        city || village || district,
+        city || village || cleanDistrict || '',
       ]
     );
 
@@ -96,10 +102,10 @@ export async function register(req: Request, res: Response): Promise<void> {
           buyerType,
           gstin || '',
           address || '',
-          city || district,
-          district,
-          state,
-          pincode,
+          city || cleanDistrict || '',
+          cleanDistrict,
+          cleanState,
+          cleanPincode,
           phone.trim(),
           email ? email.trim() : '',
           purchaseInterests || null,
@@ -131,10 +137,10 @@ export async function register(req: Request, res: Response): Promise<void> {
           purchaseInterests: purchaseInterests || null,
           location: {
             address: address || '',
-            city: city || district,
-            district,
-            state,
-            pincode,
+            city: city || cleanDistrict || '',
+            district: cleanDistrict,
+            state: cleanState,
+            pincode: cleanPincode,
             coordinates: { lat: buyerLat, lng: buyerLng },
           },
         },
@@ -158,9 +164,9 @@ export async function register(req: Request, res: Response): Promise<void> {
         phone.trim(),
         email ? email.trim() : null,
         village || '',
-        district,
-        state,
-        pincode,
+        cleanDistrict,
+        cleanState,
+        cleanPincode,
         address || '',
         farmerLat,
         farmerLng,
@@ -170,12 +176,12 @@ export async function register(req: Request, res: Response): Promise<void> {
     );
 
     // 3. Create Farm Profile ONLY if farm size or soil/irrigation is specified
-    if (farmSize || soilType || irrigationSource) {
+    if (farmSize || cleanSoil || cleanIrrigation) {
       const area = Number(farmSize) > 0 ? Number(farmSize) : null;
       await db.query(
         `INSERT INTO farms (id, farmer_id, total_area, soil_type, irrigation_source)
          VALUES ($1, $2, $3, $4, $5)`,
-        [`farm_${Date.now()}`, farmerId, area, soilType || null, irrigationSource || null]
+        [`farm_${Date.now()}`, farmerId, area, cleanSoil, cleanIrrigation]
       );
     }
 

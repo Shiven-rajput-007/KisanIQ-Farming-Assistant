@@ -12,11 +12,7 @@ import {
   AlertTriangle,
   TrendingUp,
   Cpu,
-  HelpCircle,
   Plus,
-  ArrowRight,
-  ExternalLink,
-  ChevronRight,
   RotateCcw,
   Sparkles,
 } from 'lucide-react';
@@ -31,7 +27,7 @@ import { useAuth } from '@/context/AuthContext';
 type TabType = 'overview' | 'request' | 'tracking' | 'labs' | 'history';
 
 export default function SoilTestingPage() {
-  const { t } = useTranslation('soil');
+  const { t } = useTranslation(['soil', 'crop', 'common', 'profile']);
   const { farmer } = useAuth();
   const farmerId = farmer?.id;
 
@@ -45,7 +41,7 @@ export default function SoilTestingPage() {
 
   // Form state
   const [selectedLabId, setSelectedLabId] = useState('');
-  const [selectedCrop, setSelectedCrop] = useState('गहू (Wheat)');
+  const [selectedCrop, setSelectedCrop] = useState('Wheat');
   const [testingMode, setTestingMode] = useState<'LAB_TEST' | 'MANUAL_KIT' | 'IOT_SENSOR'>('LAB_TEST');
   const [testTypes, setTestTypes] = useState<string[]>(['NPK', 'pH_EC', 'Organic_Carbon']);
   const [trackingNotes, setTrackingNotes] = useState('');
@@ -98,7 +94,7 @@ export default function SoilTestingPage() {
     setFormSuccess(null);
 
     try {
-      const res = await soilApi.createRequest({
+      await soilApi.createRequest({
         farmerId,
         labId: selectedLabId,
         cropName: selectedCrop,
@@ -107,13 +103,13 @@ export default function SoilTestingPage() {
         trackingNotes,
       });
 
-      setFormSuccess(t('form.success_title'));
+      setFormSuccess(t('soil:form.success_title'));
       setTrackingNotes('');
       // Reload requests
       const updatedReqs = await soilApi.getRequests(farmerId);
       setRequests(updatedReqs.requests);
 
-      // Switch to tracking tab after 1.5s
+      // Switch to tracking tab after 1.2s
       setTimeout(() => {
         setActiveTab('tracking');
       }, 1200);
@@ -146,14 +142,14 @@ export default function SoilTestingPage() {
     }
   };
 
-  const trackingStagesList: { key: SoilTestRequest['status']; labelMr: string; labelEn: string }[] = [
-    { key: 'REQUESTED', labelMr: 'विनंती नोंदवली', labelEn: 'Requested' },
-    { key: 'SAMPLE_PENDING', labelMr: 'नमुना संकलन बाकी', labelEn: 'Sample Pending' },
-    { key: 'SAMPLE_SUBMITTED', labelMr: 'नमुना पाठवला', labelEn: 'Submitted' },
-    { key: 'RECEIVED_BY_LAB', labelMr: 'लॅबमध्ये प्राप्त', labelEn: 'Received' },
-    { key: 'TESTING', labelMr: 'चाचणी सुरू', labelEn: 'Testing' },
-    { key: 'REPORT_READY', labelMr: 'अहवाल तयार', labelEn: 'Report Ready' },
-    { key: 'COMPLETED', labelMr: 'प्रमाणित पूर्ण', labelEn: 'Completed' },
+  const trackingStagesList: { key: SoilTestRequest['status'] }[] = [
+    { key: 'REQUESTED' },
+    { key: 'SAMPLE_PENDING' },
+    { key: 'SAMPLE_SUBMITTED' },
+    { key: 'RECEIVED_BY_LAB' },
+    { key: 'TESTING' },
+    { key: 'REPORT_READY' },
+    { key: 'COMPLETED' },
   ];
 
   return (
@@ -169,14 +165,14 @@ export default function SoilTestingPage() {
                 <FlaskConical className="h-6 w-6" />
               </span>
               <span className="text-xs font-semibold px-2.5 py-0.5 bg-emerald-400/20 text-emerald-200 rounded-full border border-emerald-400/30">
-                मराठी प्रथम (Marathi First)
+                {t('soil:badges.verified_lab')}
               </span>
             </div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-              माती परीक्षण व सुपीकता बुद्धिमत्ता
+              {t('soil:title')}
             </h1>
             <p className="text-xs md:text-sm text-emerald-100 max-w-xl">
-              अधिकृत कृषी प्रयोगशाळा, प्रत्यक्ष नमुना ट्रॅकिंग, आणि शास्त्रोक्त खत शिफारशी.
+              {t('soil:subtitle')}
             </p>
           </div>
 
@@ -185,7 +181,7 @@ export default function SoilTestingPage() {
               onClick={() => setActiveTab('request')}
               className="px-4 py-2.5 bg-white text-emerald-900 font-semibold rounded-xl text-xs md:text-sm hover:bg-emerald-50 shadow transition flex items-center gap-1.5 active:scale-95"
             >
-              <Plus className="h-4 w-4" /> नवीन चाचणी बुक करा
+              <Plus className="h-4 w-4" /> {t('soil:tabs.new_request')}
             </button>
           </div>
         </div>
@@ -193,11 +189,11 @@ export default function SoilTestingPage() {
         {/* Tab Strip */}
         <div className="flex overflow-x-auto gap-2 pt-6 mt-2 border-t border-emerald-700/50 scrollbar-none">
           {[
-            { id: 'overview', label: '📊 अहवाल व सारांश (Overview)' },
-            { id: 'request', label: '🧪 नवीन चाचणी नोंदणी (Book Lab)' },
-            { id: 'tracking', label: '🚚 नमुना ट्रॅकिंग (Tracking)' },
-            { id: 'labs', label: '🏛️ प्रयोगशाळा सूची (Labs)' },
-            { id: 'history', label: '📈 कल व इतिहास (Trends)' },
+            { id: 'overview', label: `📊 ${t('soil:tabs.overview')}` },
+            { id: 'request', label: `🧪 ${t('soil:tabs.new_request')}` },
+            { id: 'tracking', label: `🚚 ${t('soil:tabs.tracking')}` },
+            { id: 'labs', label: `🏛️ ${t('soil:tabs.labs')}` },
+            { id: 'history', label: `📈 ${t('soil:tabs.history')}` },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -225,10 +221,10 @@ export default function SoilTestingPage() {
                   <div className="flex items-center gap-2.5">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold border border-emerald-300">
                       <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                      VERIFIED LAB DATA (अधिकृत प्रयोगशाळा चाचणी)
+                      {t('soil:badges.verified_lab')}
                     </span>
                     <span className="text-xs text-sand-500">
-                      नमुना क्रमांक: <strong>{report.requestId || 'SMP-2024-001'}</strong>
+                      {t('soil:overview.sample_id')}: <strong>{report.requestId || 'SMP-2024-001'}</strong>
                     </span>
                   </div>
 
@@ -237,12 +233,12 @@ export default function SoilTestingPage() {
                       onClick={() => setShowPdfModal(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-lg border border-emerald-300 transition"
                     >
-                      <FileText className="h-3.5 w-3.5" /> अधिकृत अहवाल पहा
+                      <FileText className="h-3.5 w-3.5" /> {t('soil:overview.view_pdf')}
                     </button>
                     <button
                       onClick={() => setShowPdfModal(true)}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-sand-100 hover:bg-sand-200 text-sand-700 text-xs font-medium rounded-lg transition"
-                      title="डाउनलोड करा"
+                      title={t('soil:overview.download_pdf')}
                     >
                       <Download className="h-3.5 w-3.5" />
                     </button>
@@ -251,19 +247,19 @@ export default function SoilTestingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs md:text-sm">
                   <div>
-                    <span className="text-sand-500">मान्यताप्राप्त प्रयोगशाळा:</span>
+                    <span className="text-sand-500">{t('soil:overview.lab_name')}:</span>
                     <p className="font-semibold text-sand-900 mt-0.5">
-                      {report.labName || 'महाधन स्वाइल टेस्टिंग लॅबोरेटरी, पुणे'}
+                      {report.labName || 'Agricultural Research Laboratory'}
                     </p>
                   </div>
                   <div>
-                    <span className="text-sand-500">परीक्षण दिनांक:</span>
+                    <span className="text-sand-500">{t('soil:overview.test_date')}:</span>
                     <p className="font-semibold text-sand-900 mt-0.5">{report.testDate}</p>
                   </div>
                   <div>
-                    <span className="text-sand-500">पिकानुसार मूल्यमापन:</span>
+                    <span className="text-sand-500">{t('soil:overview.crop_calibrated')}:</span>
                     <p className="font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
-                      <Sparkles className="h-3.5 w-3.5" /> {report.cropName || 'गहू (Wheat)'}
+                      <Sparkles className="h-3.5 w-3.5" /> {report.cropName || 'Wheat'}
                     </p>
                   </div>
                 </div>
@@ -273,180 +269,179 @@ export default function SoilTestingPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {/* 1. pH */}
                 <div className="bg-white rounded-xl border border-sand-200 p-4 shadow-sm space-y-1">
-                  <span className="text-xs text-sand-500 font-medium">मातीचा pH (सामू)</span>
+                  <span className="text-xs text-sand-500 font-medium">{t('soil:indicators.ph')}</span>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-2xl font-bold text-sand-900">{report.ph}</span>
                     <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
-                      उत्तम
+                      {t('soil:status.optimal')}
                     </span>
                   </div>
-                  <p className="text-[11px] text-sand-600">प्रमाण: ६.५ - ७.५</p>
+                  <p className="text-[11px] text-sand-600">6.5 - 7.5</p>
                 </div>
 
                 {/* 2. Nitrogen */}
                 <div className="bg-white rounded-xl border border-amber-200 p-4 shadow-sm space-y-1 bg-amber-50/20">
-                  <span className="text-xs text-amber-900 font-medium">नायट्रोजन / नत्र (N)</span>
+                  <span className="text-xs text-amber-900 font-medium">{t('soil:indicators.nitrogen')}</span>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-2xl font-bold text-amber-900">{report.nitrogenKgHa}</span>
                     <span className="text-[10px] text-amber-700 font-semibold bg-amber-100 px-1.5 py-0.5 rounded">
-                      कमी
+                      {t('soil:status.low')}
                     </span>
                   </div>
-                  <p className="text-[11px] text-sand-600">kg/ha (इष्टतम: २८०+)</p>
+                  <p className="text-[11px] text-sand-600">kg/ha (280+)</p>
                 </div>
 
                 {/* 3. Phosphorus */}
                 <div className="bg-white rounded-xl border border-sand-200 p-4 shadow-sm space-y-1">
-                  <span className="text-xs text-sand-500 font-medium">फॉस्फरस / स्फुरद (P)</span>
+                  <span className="text-xs text-sand-500 font-medium">{t('soil:indicators.phosphorus')}</span>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-2xl font-bold text-sand-900">{report.phosphorusKgHa}</span>
                     <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
-                      मध्यम
+                      {t('soil:status.medium')}
                     </span>
                   </div>
-                  <p className="text-[11px] text-sand-600">kg/ha (इष्टतम: १५-३५)</p>
+                  <p className="text-[11px] text-sand-600">kg/ha (15-35)</p>
                 </div>
 
                 {/* 4. Potassium */}
                 <div className="bg-white rounded-xl border border-sand-200 p-4 shadow-sm space-y-1">
-                  <span className="text-xs text-sand-500 font-medium">पोटॅश / पालाश (K)</span>
+                  <span className="text-xs text-sand-500 font-medium">{t('soil:indicators.potassium')}</span>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-2xl font-bold text-sand-900">{report.potassiumKgHa}</span>
                     <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
-                      योग्य
+                      {t('soil:status.optimal')}
                     </span>
                   </div>
-                  <p className="text-[11px] text-sand-600">kg/ha (इष्टतम: १५०+)</p>
+                  <p className="text-[11px] text-sand-600">kg/ha (150+)</p>
                 </div>
 
                 {/* 5. Organic Carbon */}
                 <div className="bg-white rounded-xl border border-sand-200 p-4 shadow-sm space-y-1">
-                  <span className="text-xs text-sand-500 font-medium">सेंद्रिय कर्ब (OC)</span>
+                  <span className="text-xs text-sand-500 font-medium">{t('soil:indicators.organic_carbon')}</span>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-2xl font-bold text-sand-900">{report.organicCarbon}%</span>
                     <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
-                      मध्यम
+                      {t('soil:status.medium')}
                     </span>
                   </div>
-                  <p className="text-[11px] text-sand-600">अपेक्षित: ०.५% - ०.७५%</p>
+                  <p className="text-[11px] text-sand-600">0.5% - 0.75%</p>
                 </div>
 
                 {/* 6. EC */}
                 <div className="bg-white rounded-xl border border-sand-200 p-4 shadow-sm space-y-1">
-                  <span className="text-xs text-sand-500 font-medium">क्षारता (EC)</span>
+                  <span className="text-xs text-sand-500 font-medium">{t('soil:indicators.ec')}</span>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-2xl font-bold text-sand-900">{report.ec}</span>
                     <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
-                      सामान्य
+                      {t('soil:status.normal')}
                     </span>
                   </div>
-                  <p className="text-[11px] text-sand-600">dS/m (क्षारतामुक्त)</p>
+                  <p className="text-[11px] text-sand-600">dS/m</p>
                 </div>
               </div>
 
-              {/* Agronomic Recommendations & Explainability Box ("Kyun?") */}
+              {/* Agronomic Recommendations & Explainability Box */}
               <div className="bg-white rounded-2xl border border-sand-200 p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 text-emerald-900 font-bold text-base">
                   <span className="p-1 bg-emerald-100 rounded-lg text-emerald-700">🌱</span>
-                  <h3>कृषी शास्त्रज्ञ खत व्यवस्थापन सल्ला (Scientific Advisory)</h3>
+                  <h3>{t('soil:advice.title')}</h3>
                 </div>
 
                 <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-2">
                   <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs md:text-sm">
                     <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    <span>मुख्य कमतरता: जमिनीत नायट्रोजनचे प्रमाण कमी (२६० kg/ha)</span>
+                    <span>{t('soil:advice.deficiency_prefix')}</span>
                   </div>
                   <p className="text-xs text-amber-950 leading-relaxed">
-                    मातीच्या अहवालानुसार नत्राची कमतरता असल्यामुळे पिकाची शाकीय वाढ मंदावू शकते.
-                    यासाठी युरिया पेरणीच्या वेळी ३०% आणि पेरणीनंतर २५-३० दिवसांनी सिंचनासोबत उर्वरित मात्रा द्यावी.
+                    {t('soil:advice.deficiency_desc')}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <h4 className="text-xs font-semibold text-sand-700 uppercase tracking-wider">
-                    पिकासाठी कृती योजना:
+                    {t('soil:advice.plan_title')}
                   </h4>
                   <ul className="space-y-2 text-xs md:text-sm text-sand-800">
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">✓</span>
                       <span>
-                        <strong>सेंद्रिय खत:</strong> प्रति एकरी २-३ टन चांगले कुजलेले शेणखत किंवा गांडूळ खत जमिनीत मिसळा, ज्यामुळे सेंद्रिय कर्ब वाढेल.
+                        <strong>{t('soil:advice.organic_manure_title')}</strong> {t('soil:advice.organic_manure_desc')}
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">✓</span>
                       <span>
-                        <strong>संतुलित NPK:</strong> फॉस्फरस आणि पोटॅश योग्य प्रमाणात असल्याने रासायनिक खतांचा अनावश्यक खर्च टाळा.
+                        <strong>{t('soil:advice.balanced_npk_title')}</strong> {t('soil:advice.balanced_npk_desc')}
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">✓</span>
                       <span>
-                        <strong>सूक्ष्म अन्नद्रव्ये:</strong> पीक फुलोऱ्यात असताना झिंक सल्फेट किंवा मायक्रोन्यूट्रिएंट्सची हलकी फवारणी करावी.
+                        <strong>{t('soil:advice.micronutrients_title')}</strong> {t('soil:advice.micronutrients_desc')}
                       </span>
                     </li>
                   </ul>
                 </div>
               </div>
 
-              {/* DEMO IOT SENSOR CARD (Clearly tagged DEMO SENSOR DATA) */}
+              {/* IOT SENSOR CARD */}
               <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-sm space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <Cpu className="h-5 w-5 text-amber-400" />
-                    <h3 className="font-bold text-sm">शेतातील थेट आयओटी सेन्सर वाचन</h3>
+                    <h3 className="font-bold text-sm">{t('soil:sensor.title')}</h3>
                   </div>
                   <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-[11px] font-bold tracking-wide">
-                    DEMO SENSOR DATA (प्रायोगिक सेन्सर डेटा)
+                    {t('soil:sensor.badge')}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="bg-slate-800/70 p-3 rounded-xl">
-                    <span className="text-slate-400">मातीतील ओलावा</span>
+                    <span className="text-slate-400">{t('soil:sensor.moisture')}</span>
                     <p className="text-lg font-bold text-emerald-400 mt-1">
                       {sensorReading?.moisturePct || 24.5}%
                     </p>
-                    <span className="text-[10px] text-slate-400">सिंचनाची गरज नाही</span>
+                    <span className="text-[10px] text-slate-400">{t('soil:sensor.no_irrigation')}</span>
                   </div>
                   <div className="bg-slate-800/70 p-3 rounded-xl">
-                    <span className="text-slate-400">मातीचे तापमान</span>
+                    <span className="text-slate-400">{t('soil:sensor.soil_temp')}</span>
                     <p className="text-lg font-bold text-amber-400 mt-1">
                       {sensorReading?.soilTempC || 26.2}°C
                     </p>
-                    <span className="text-[10px] text-slate-400">उत्तम तापमान</span>
+                    <span className="text-[10px] text-slate-400">{t('soil:sensor.optimal_temp')}</span>
                   </div>
                   <div className="bg-slate-800/70 p-3 rounded-xl">
-                    <span className="text-slate-400">सेन्सर बॅटरी</span>
+                    <span className="text-slate-400">{t('soil:sensor.battery')}</span>
                     <p className="text-lg font-bold text-slate-200 mt-1">
                       {sensorReading?.batteryLevelPct || 92}%
                     </p>
-                    <span className="text-[10px] text-emerald-400">सक्रिय (Online)</span>
+                    <span className="text-[10px] text-emerald-400">{t('soil:sensor.active')}</span>
                   </div>
                   <div className="bg-slate-800/70 p-3 rounded-xl">
-                    <span className="text-slate-400">शेवटचे रिफ्रेश</span>
-                    <p className="text-sm font-semibold text-slate-200 mt-1">आत्ताच (१० मि.)</p>
-                    <span className="text-[10px] text-slate-400">Node-01 (North Field)</span>
+                    <span className="text-slate-400">{t('soil:sensor.last_refresh')}</span>
+                    <p className="text-sm font-semibold text-slate-200 mt-1">{t('soil:sensor.just_now')}</p>
+                    <span className="text-[10px] text-slate-400">{t('soil:sensor.node_name')}</span>
                   </div>
                 </div>
 
                 <p className="text-[11px] text-slate-400 italic">
-                  * टीप: सेन्सर डेटा हा केवळ शेतातील ओलावा व तापमानाच्या तात्काळ निरीक्षणासाठी आहे. अधिकृत खत व्यवस्थापनासाठी वरील मान्यताप्राप्त प्रयोगशाळा अहवालच ग्राह्य धरावा.
+                  {t('soil:sensor.note')}
                 </p>
               </div>
             </>
           ) : (
             <div className="bg-white rounded-2xl border border-sand-200 p-8 text-center space-y-3">
               <FlaskConical className="h-10 w-10 text-sand-400 mx-auto" />
-              <h3 className="font-bold text-sand-800">कोणताही माती अहवाल सापडला नाही</h3>
+              <h3 className="font-bold text-sand-800">{t('soil:empty_report.title')}</h3>
               <p className="text-xs text-sand-500 max-w-sm mx-auto">
-                आपल्या शेतातील मातीचे परीक्षण करून घेण्यासाठी नवीन चाचणी बुक करा.
+                {t('soil:empty_report.desc')}
               </p>
               <button
                 onClick={() => setActiveTab('request')}
                 className="px-4 py-2 bg-emerald-700 text-white text-xs font-semibold rounded-xl hover:bg-emerald-800"
               >
-                नवीन चाचणी नोंदवा
+                {t('soil:empty_report.cta')}
               </button>
             </div>
           )}
@@ -457,9 +452,9 @@ export default function SoilTestingPage() {
       {activeTab === 'request' && (
         <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-sand-200 p-5 md:p-6 shadow-sm space-y-5">
           <div>
-            <h2 className="text-lg font-bold text-sand-900">नवीन माती चाचणी अर्ज</h2>
+            <h2 className="text-lg font-bold text-sand-900">{t('soil:form.title')}</h2>
             <p className="text-xs text-sand-600 mt-0.5">
-              मान्यताप्राप्त प्रयोगशाळा निवडा आणि मातीचा नमुना तपासणीसाठी पाठवा.
+              {t('soil:form.desc')}
             </p>
           </div>
 
@@ -474,24 +469,24 @@ export default function SoilTestingPage() {
             {/* 1. Testing Mode */}
             <div>
               <label className="block font-semibold text-sand-800 mb-1.5">
-                चाचणी पद्धती निवडा (Testing Mode):
+                {t('soil:form.testing_mode')}:
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[
                   {
                     id: 'LAB_TEST',
-                    title: 'अधिकृत प्रयोगशाळा',
-                    sub: 'प्रमाणित लॅब (Official NABL)',
+                    title: t('soil:form.mode_lab'),
+                    sub: 'NABL Certified',
                   },
                   {
                     id: 'MANUAL_KIT',
-                    title: 'मॅन्युअल टेस्ट किट',
-                    sub: 'तातडीची शेत चाचणी',
+                    title: t('soil:form.mode_kit'),
+                    sub: 'Field Test',
                   },
                   {
                     id: 'IOT_SENSOR',
-                    title: 'आयओटी सेन्सर',
-                    sub: 'डेमो सेन्सर जोडणी',
+                    title: t('soil:form.mode_sensor'),
+                    sub: 'Demo Sensor',
                   },
                 ].map((mode) => (
                   <button
@@ -514,27 +509,27 @@ export default function SoilTestingPage() {
             {/* 2. Select Crop */}
             <div>
               <label className="block font-semibold text-sand-800 mb-1">
-                कोणत्या पिकासाठी माती परीक्षण करायचे आहे?
+                {t('soil:form.select_crop')}:
               </label>
               <select
                 value={selectedCrop}
                 onChange={(e) => setSelectedCrop(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-sand-300 bg-sand-50 focus:ring-2 focus:ring-emerald-600 text-sand-900"
               >
-                <option value="गहू (Wheat)">गहू (Wheat)</option>
-                <option value="सोयाबीन (Soybean)">सोयाबीन (Soybean)</option>
-                <option value="कापूस (Cotton)">कापूस (Cotton)</option>
-                <option value="ऊस (Sugarcane)">ऊस (Sugarcane)</option>
-                <option value="भात (Rice)">भात (Rice)</option>
-                <option value="कांदा (Onion)">कांदा (Onion)</option>
-                <option value="टोमॅटो (Tomato)">टोमॅटो (Tomato)</option>
+                <option value="Wheat">{t('crop:crops.wheat', 'Wheat')}</option>
+                <option value="Soybean">{t('crop:crops.soybean', 'Soybean')}</option>
+                <option value="Cotton">{t('crop:crops.cotton', 'Cotton')}</option>
+                <option value="Sugarcane">{t('crop:crops.sugarcane', 'Sugarcane')}</option>
+                <option value="Rice">{t('crop:crops.rice', 'Rice')}</option>
+                <option value="Onion">{t('crop:crops.onion', 'Onion')}</option>
+                <option value="Tomato">{t('crop:crops.tomato', 'Tomato')}</option>
               </select>
             </div>
 
             {/* 3. Select Laboratory */}
             <div>
               <label className="block font-semibold text-sand-800 mb-1">
-                मान्यताप्राप्त प्रयोगशाळा निवडा:
+                {t('soil:form.select_lab')}:
               </label>
               <select
                 value={selectedLabId}
@@ -543,7 +538,7 @@ export default function SoilTestingPage() {
               >
                 {labs.map((lab) => (
                   <option key={lab.id} value={lab.id}>
-                    {lab.name} ({lab.city}, {lab.state}) — {lab.turnaroundDays} दिवसांत निकाल
+                    {lab.name} ({lab.city}, {lab.state}) — {lab.turnaroundDays} {t('soil:labs.days', { count: lab.turnaroundDays })}
                   </option>
                 ))}
               </select>
@@ -552,14 +547,14 @@ export default function SoilTestingPage() {
             {/* 4. Test Types Checklist */}
             <div>
               <label className="block font-semibold text-sand-800 mb-1.5">
-                आवश्यक चाचण्या निवडा (Test Parameters):
+                {t('soil:form.test_types')}:
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'NPK', label: 'नत्र, स्फुरद, पालाश (N-P-K)' },
-                  { id: 'pH_EC', label: 'सामू व क्षारता (pH & EC)' },
-                  { id: 'Organic_Carbon', label: 'सेंद्रिय कर्ब (Organic Carbon)' },
-                  { id: 'Micronutrients', label: 'सूक्ष्म अन्नद्रव्ये (Zn, Fe, Mn, Cu)' },
+                  { id: 'NPK', label: t('soil:form.test_npk') },
+                  { id: 'pH_EC', label: t('soil:form.test_ph_ec') },
+                  { id: 'Organic_Carbon', label: t('soil:form.test_oc') },
+                  { id: 'Micronutrients', label: t('soil:form.test_micro') },
                 ].map((item) => {
                   const checked = testTypes.includes(item.id);
                   return (
@@ -589,12 +584,12 @@ export default function SoilTestingPage() {
             {/* 5. Tracking Notes */}
             <div>
               <label className="block font-semibold text-sand-800 mb-1">
-                विशेष सूचना / शेताचा तपशील (पर्यायी):
+                {t('soil:form.tracking_notes')}:
               </label>
               <textarea
                 value={trackingNotes}
                 onChange={(e) => setTrackingNotes(e.target.value)}
-                placeholder="उदा. उत्तर बाजूचे २ एकर क्षेत्र, विहिरीचे पाणी..."
+                placeholder={t('soil:form.tracking_notes')}
                 rows={2}
                 className="w-full px-3.5 py-2 rounded-xl border border-sand-300 bg-sand-50 focus:ring-2 focus:ring-emerald-600 text-sand-900"
               />
@@ -606,10 +601,10 @@ export default function SoilTestingPage() {
               className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow-md transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
-                'नोंदणी होत आहे...'
+                t('soil:form.submitting')
               ) : (
                 <>
-                  <FlaskConical className="h-4 w-4" /> चाचणी विनंती पाठवा
+                  <FlaskConical className="h-4 w-4" /> {t('soil:form.submit_btn')}
                 </>
               )}
             </button>
@@ -621,9 +616,9 @@ export default function SoilTestingPage() {
       {activeTab === 'tracking' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-sand-900">नमुना ट्रॅकिंग व स्थिती (Tracking)</h2>
+            <h2 className="text-lg font-bold text-sand-900">{t('soil:tabs.tracking')}</h2>
             <span className="text-xs text-sand-500">
-              एकूण विनंत्या: <strong>{requests.length}</strong>
+              {requests.length}
             </span>
           </div>
 
@@ -640,14 +635,14 @@ export default function SoilTestingPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-bold text-sand-900 text-sm md:text-base">
-                        {req.cropName} माती नमुना
+                        {req.cropName}
                       </h3>
                       <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold">
                         {req.sampleId}
                       </span>
                     </div>
                     <p className="text-xs text-sand-500 mt-0.5">
-                      प्रयोगशाळा: <strong>{req.labName || 'मान्यताप्राप्त प्रयोगशाळा'}</strong> | नोंदणी तारीख: {new Date(req.createdAt).toLocaleDateString('mr-IN')}
+                      {t('soil:overview.lab_name')}: <strong>{req.labName || 'Laboratory'}</strong> | {t('soil:overview.test_date')}: {new Date(req.createdAt).toLocaleDateString()}
                     </p>
                   </div>
 
@@ -655,9 +650,8 @@ export default function SoilTestingPage() {
                     <button
                       onClick={() => handleAdvanceStatus(req.id, req.status)}
                       className="inline-flex items-center gap-1 px-3 py-1.5 bg-sand-100 hover:bg-sand-200 text-sand-800 text-xs font-semibold rounded-lg transition"
-                      title="चाचणी टप्पा पुढे सरकवा (Simulate Next Status)"
                     >
-                      <RotateCcw className="h-3 w-3" /> टप्पा पुढे न्या
+                      <RotateCcw className="h-3 w-3" /> {t('common:buttons.continue', 'Next')}
                     </button>
                   </div>
                 </div>
@@ -689,9 +683,8 @@ export default function SoilTestingPage() {
                               </div>
                             )}
                           </div>
-                          <p className="text-[11px] leading-tight font-medium">{stage.labelMr}</p>
-                          <p className="text-[9px] text-sand-500 mt-0.5 uppercase tracking-tighter">
-                            {stage.labelEn}
+                          <p className="text-[11px] leading-tight font-medium">
+                            {t(`soil:tracking_stages.${stage.key}`)}
                           </p>
                         </div>
                       );
@@ -703,8 +696,8 @@ export default function SoilTestingPage() {
                 <div className="bg-sand-50 rounded-xl p-3 text-xs text-sand-700 flex items-start gap-2">
                   <Clock className="h-4 w-4 text-sand-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <span className="font-semibold text-sand-900">ट्रॅकिंग अपडेट: </span>
-                    <span>{req.trackingNotes || 'नमुना वेळेवर संकलित करण्यात आला आहे.'}</span>
+                    <span className="font-semibold text-sand-900">{t('soil:form.tracking_notes')}: </span>
+                    <span>{req.trackingNotes || '-'}</span>
                   </div>
                 </div>
               </div>
@@ -718,9 +711,9 @@ export default function SoilTestingPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-sand-900">मान्यताप्राप्त माती परीक्षण प्रयोगशाळा</h2>
+              <h2 className="text-lg font-bold text-sand-900">{t('soil:labs.title')}</h2>
               <p className="text-xs text-sand-500 mt-0.5">
-                NABL व महाराष्ट्र कृषी विद्यापीठांशी संलग्न अधिकृत लॅब नेटवर्क.
+                {t('soil:labs.accreditation')}
               </p>
             </div>
           </div>
@@ -746,13 +739,13 @@ export default function SoilTestingPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                   <div className="bg-sand-50 p-2.5 rounded-xl">
-                    <span className="text-sand-500">प्रमाणपत्र (Accreditation):</span>
+                    <span className="text-sand-500">{t('soil:labs.accreditation')}:</span>
                     <p className="font-semibold text-sand-800 mt-0.5">{lab.accreditation}</p>
                   </div>
                   <div className="bg-sand-50 p-2.5 rounded-xl">
-                    <span className="text-sand-500">निकाल कालावधी:</span>
+                    <span className="text-sand-500">{t('soil:labs.turnaround')}:</span>
                     <p className="font-semibold text-sand-800 mt-0.5">
-                      {lab.turnaroundDays} दिवसांत अहवाल
+                      {lab.turnaroundDays} {t('soil:labs.days', { count: lab.turnaroundDays })}
                     </p>
                   </div>
                 </div>
@@ -768,7 +761,7 @@ export default function SoilTestingPage() {
                     }}
                     className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-lg text-xs shadow-sm transition active:scale-95"
                   >
-                    चाचणी बुक करा
+                    {t('soil:labs.book_with_lab')}
                   </button>
                 </div>
               </div>
@@ -782,9 +775,9 @@ export default function SoilTestingPage() {
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-sand-200 p-5 shadow-sm space-y-4">
             <div>
-              <h2 className="text-lg font-bold text-sand-900">माती आरोग्य कल व बदल (Trends)</h2>
+              <h2 className="text-lg font-bold text-sand-900">{t('soil:trends.title')}</h2>
               <p className="text-xs text-sand-500 mt-0.5">
-                मागील ३ हंगामांमधील मातीतील नत्र, स्फुरद, पालाश आणि pH मधील तुलनात्मक बदल.
+                {t('soil:trends.subtitle')}
               </p>
             </div>
 
@@ -792,8 +785,8 @@ export default function SoilTestingPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
                 {
-                  season: 'फेब्रुवारी २०२३ (रब्बी हंगाम)',
-                  lab: 'महाधन पुणे',
+                  season: 'Rabi 2023',
+                  lab: 'Agricultural Lab',
                   ph: 6.3,
                   nitrogen: 220,
                   phosphorus: 14.2,
@@ -801,8 +794,8 @@ export default function SoilTestingPage() {
                   oc: '0.38%',
                 },
                 {
-                  season: 'ऑक्टोबर २०२३ (खरीप काढणी)',
-                  lab: 'महाधन पुणे',
+                  season: 'Kharif 2023',
+                  lab: 'Agricultural Lab',
                   ph: 6.4,
                   nitrogen: 240,
                   phosphorus: 16.5,
@@ -810,8 +803,8 @@ export default function SoilTestingPage() {
                   oc: '0.41%',
                 },
                 {
-                  season: 'फेब्रुवारी २०२४ (चालू अहवाल)',
-                  lab: 'महाधन पुणे',
+                  season: 'Rabi 2024',
+                  lab: 'Agricultural Lab',
                   ph: 6.5,
                   nitrogen: 260,
                   phosphorus: 18.5,
@@ -832,29 +825,29 @@ export default function SoilTestingPage() {
                     <span className="font-bold text-xs text-sand-900">{item.season}</span>
                     {item.active && (
                       <span className="px-2 py-0.5 bg-emerald-600 text-white rounded text-[10px] font-semibold">
-                        चालू
+                        {t('soil:status.current')}
                       </span>
                     )}
                   </div>
                   <div className="space-y-1.5 text-xs text-sand-700">
                     <div className="flex justify-between">
-                      <span>माती pH (सामू):</span>
+                      <span>{t('soil:indicators.ph')}:</span>
                       <strong className="text-sand-900">{item.ph}</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>नायट्रोजन (N):</span>
+                      <span>{t('soil:indicators.nitrogen')}:</span>
                       <strong className="text-amber-700">{item.nitrogen} kg/ha</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>फॉस्फरस (P):</span>
+                      <span>{t('soil:indicators.phosphorus')}:</span>
                       <strong className="text-sand-900">{item.phosphorus} kg/ha</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>पोटॅश (K):</span>
+                      <span>{t('soil:indicators.potassium')}:</span>
                       <strong className="text-sand-900">{item.potassium} kg/ha</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span>सेंद्रिय कर्ब:</span>
+                      <span>{t('soil:indicators.organic_carbon')}:</span>
                       <strong className="text-sand-900">{item.oc}</strong>
                     </div>
                   </div>
@@ -866,10 +859,9 @@ export default function SoilTestingPage() {
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
               <TrendingUp className="h-5 w-5 text-emerald-700 mt-0.5 flex-shrink-0" />
               <div className="text-xs text-emerald-900 space-y-1">
-                <h4 className="font-bold text-sm">सुपीकता सुधारणा निरीक्षण:</h4>
+                <h4 className="font-bold text-sm">{t('soil:trends.insight_title')}</h4>
                 <p className="leading-relaxed">
-                  मागील वर्षभरात शेणखत आणि संतुलित खतांच्या वापरामुळे उपलब्ध नत्रामध्ये +४० kg/ha ची सुधारणा दिसून आली आहे.
-                  तसेच सेंद्रिय कर्ब ०.३८% वरून ०.४५% पर्यंत सुधारले आहे. हीच पद्धत चालू ठेवल्यास मातीची जलधारण क्षमता अधिक सुधारेल.
+                  {t('soil:trends.insight_desc')}
                 </p>
               </div>
             </div>
@@ -885,7 +877,7 @@ export default function SoilTestingPage() {
               <div className="flex items-center gap-2">
                 <FlaskConical className="h-5 w-5 text-emerald-700" />
                 <h3 className="font-bold text-base text-sand-900">
-                  अधिकृत मृदा आरोग्य पत्रिका (Official Soil Health Certificate)
+                  {t('soil:certificate.title')}
                 </h3>
               </div>
               <button
@@ -900,24 +892,24 @@ export default function SoilTestingPage() {
             <div className="border-2 border-sand-300 rounded-xl p-5 bg-sand-50/50 space-y-4 font-serif">
               <div className="text-center border-b-2 border-sand-300 pb-3">
                 <h2 className="text-base font-bold tracking-wide uppercase text-emerald-950">
-                  MAHADHAN SOIL TESTING & RESEARCH LABORATORY
+                  {t('soil:certificate.lab_header')}
                 </h2>
                 <p className="text-xs text-sand-600">
-                  Accredited by NABL (Certificate No: TC-7890) & Govt. of Maharashtra
+                  {t('soil:certificate.accreditation_desc')}
                 </p>
-                <p className="text-[11px] text-sand-500">Pune Agricultural Research Complex, Pune 411005</p>
+                <p className="text-[11px] text-sand-500">Agricultural Soil Testing Complex</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs border-b border-sand-200 pb-3">
                 <div>
-                  <p><strong>Farmer Name:</strong> {farmer?.name || 'Farmer'}</p>
-                  <p><strong>Village / District:</strong> {farmer?.location?.district ? `${farmer.location.district}, ${farmer.location.state}` : 'Registered Field'}</p>
-                  <p><strong>Crop Calibrated:</strong> {report?.cropName || selectedCrop || 'Crop'}</p>
+                  <p><strong>{t('profile:fields.name', 'Farmer Name')}:</strong> {farmer?.name || 'Farmer'}</p>
+                  <p><strong>{t('profile:fields.location', 'Location')}:</strong> {farmer?.location?.district ? `${farmer.location.district}, ${farmer.location.state}` : 'Registered Field'}</p>
+                  <p><strong>{t('soil:overview.crop_calibrated')}:</strong> {report?.cropName || selectedCrop || 'Crop'}</p>
                 </div>
                 <div className="text-right">
-                  <p><strong>Sample ID:</strong> {report?.id || 'SMP-VERIFIED'}</p>
-                  <p><strong>Date of Testing:</strong> {report?.testDate || new Date().toISOString().split('T')[0]}</p>
-                  <p><strong>Report Status:</strong> VERIFIED & SEALED</p>
+                  <p><strong>{t('soil:overview.sample_id')}:</strong> {report?.id || 'SMP-VERIFIED'}</p>
+                  <p><strong>{t('soil:overview.test_date')}:</strong> {report?.testDate || new Date().toISOString().split('T')[0]}</p>
+                  <p><strong>{t('soil:overview.overall_health')}:</strong> {t('soil:certificate.verified_sealed')}</p>
                 </div>
               </div>
 
@@ -936,44 +928,44 @@ export default function SoilTestingPage() {
                     <td className="p-2">Soil pH (1:2.5)</td>
                     <td className="p-2 text-center font-bold">{report?.ph ?? 6.5}</td>
                     <td className="p-2 text-center">-</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.ph ? (report.ph < 6 ? 'Low' : report.ph > 7.5 ? 'High' : 'Optimal') : 'Optimal'}</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.ph ? (report.ph < 6 ? t('soil:status.low') : report.ph > 7.5 ? t('soil:status.high') : t('soil:status.optimal')) : t('soil:status.optimal')}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Electrical Conductivity (EC)</td>
                     <td className="p-2 text-center font-bold">{report?.ec ?? 0.42}</td>
                     <td className="p-2 text-center">dS/m</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.ec ? (report.ec > 1.0 ? 'High' : 'Normal') : 'Normal'}</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.ec ? (report.ec > 1.0 ? t('soil:status.high') : t('soil:status.normal')) : t('soil:status.normal')}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Organic Carbon (OC)</td>
                     <td className="p-2 text-center font-bold">{report?.organicCarbon ?? 0.45}</td>
                     <td className="p-2 text-center">%</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.organicCarbon ? (report.organicCarbon < 0.5 ? 'Low' : report.organicCarbon > 0.75 ? 'High' : 'Medium') : 'Medium'}</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.organicCarbon ? (report.organicCarbon < 0.5 ? t('soil:status.low') : report.organicCarbon > 0.75 ? t('soil:status.high') : t('soil:status.medium')) : t('soil:status.medium')}</td>
                   </tr>
                   <tr className="bg-amber-50">
                     <td className="p-2 font-bold text-amber-900">Available Nitrogen (N)</td>
                     <td className="p-2 text-center font-bold text-amber-900">{report?.nitrogenKgHa ?? 260}</td>
                     <td className="p-2 text-center">kg/ha</td>
-                    <td className="p-2 text-right text-amber-700 font-bold">{report?.nitrogenKgHa ? (report.nitrogenKgHa < 280 ? 'Low' : report.nitrogenKgHa > 560 ? 'High' : 'Optimal') : 'Low'}</td>
+                    <td className="p-2 text-right text-amber-700 font-bold">{report?.nitrogenKgHa ? (report.nitrogenKgHa < 280 ? t('soil:status.low') : report.nitrogenKgHa > 560 ? t('soil:status.high') : t('soil:status.optimal')) : t('soil:status.low')}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Available Phosphorus (P)</td>
                     <td className="p-2 text-center font-bold">{report?.phosphorusKgHa ?? 18.5}</td>
                     <td className="p-2 text-center">kg/ha</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.phosphorusKgHa ? (report.phosphorusKgHa < 10 ? 'Low' : report.phosphorusKgHa > 25 ? 'High' : 'Optimal') : 'Optimal'}</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.phosphorusKgHa ? (report.phosphorusKgHa < 10 ? t('soil:status.low') : report.phosphorusKgHa > 25 ? t('soil:status.high') : t('soil:status.optimal')) : t('soil:status.optimal')}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Available Potassium (K)</td>
                     <td className="p-2 text-center font-bold">{report?.potassiumKgHa ?? 210}</td>
                     <td className="p-2 text-center">kg/ha</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.potassiumKgHa ? (report.potassiumKgHa < 120 ? 'Low' : report.potassiumKgHa > 280 ? 'High' : 'Optimal') : 'Optimal'}</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.potassiumKgHa ? (report.potassiumKgHa < 120 ? t('soil:status.low') : report.potassiumKgHa > 280 ? t('soil:status.high') : t('soil:status.optimal')) : t('soil:status.optimal')}</td>
                   </tr>
                 </tbody>
               </table>
 
               <div className="pt-2 text-xs text-sand-700 space-y-1">
-                <p><strong>Authorized Signatory:</strong> Dr. V. S. Deshmukh, Chief Agronomist</p>
-                <p className="text-[10px] text-sand-500">Digitally verified and stamped under Indian Agricultural Soil Health Card scheme.</p>
+                <p><strong>{t('soil:certificate.signatory')}</strong></p>
+                <p className="text-[10px] text-sand-500">{t('soil:certificate.scheme_note')}</p>
               </div>
             </div>
 
