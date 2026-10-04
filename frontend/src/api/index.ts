@@ -47,14 +47,14 @@ export interface DashboardResponse {
 }
 
 export const dashboardApi = {
-  getDashboard: (params?: { lat?: number; lon?: number; district?: string; state?: string }) => {
+  getDashboard: (params?: { lat?: number; lon?: number; district?: string; state?: string }, options?: { signal?: AbortSignal }) => {
     const sp = new URLSearchParams();
     if (params?.lat !== undefined) sp.append('lat', params.lat.toString());
     if (params?.lon !== undefined) sp.append('lon', params.lon.toString());
     if (params?.district) sp.append('district', params.district);
     if (params?.state) sp.append('state', params.state);
     const qs = sp.toString();
-    return api.get<DashboardResponse>(`/dashboard${qs ? `?${qs}` : ''}`);
+    return api.get<DashboardResponse>(`/dashboard${qs ? `?${qs}` : ''}`, options);
   },
 };
 
@@ -67,12 +67,12 @@ export interface WeatherResponse {
 }
 
 export const weatherApi = {
-  getWeather: (lat?: number, lon?: number) => {
+  getWeather: (lat?: number, lon?: number, options?: { signal?: AbortSignal }) => {
     const sp = new URLSearchParams();
     if (lat !== undefined) sp.append('lat', lat.toString());
     if (lon !== undefined) sp.append('lon', lon.toString());
     const qs = sp.toString();
-    return api.get<WeatherResponse>(`/weather/current${qs ? `?${qs}` : ''}`);
+    return api.get<WeatherResponse>(`/weather/current${qs ? `?${qs}` : ''}`, options);
   },
 };
 
@@ -103,6 +103,8 @@ export interface MarketComparisonResponse {
     note?: string;
     missingKey?: string;
     isStale?: boolean;
+    scope?: 'district' | 'state' | 'national';
+    scopeNote?: string;
   };
   userCoordinates?: { lat: number; lon: number };
   markets: MarketData[];
@@ -119,7 +121,8 @@ export const marketApi = {
     lat?: number,
     lon?: number,
     district?: string,
-    state?: string
+    state?: string,
+    options?: { signal?: AbortSignal }
   ) => {
     const sp = new URLSearchParams({
       crop,
@@ -129,7 +132,7 @@ export const marketApi = {
     if (lon !== undefined) sp.append('lon', lon.toString());
     if (district) sp.append('district', district);
     if (state) sp.append('state', state);
-    return api.get<MarketComparisonResponse>(`/market/comparison?${sp.toString()}`);
+    return api.get<MarketComparisonResponse>(`/market/comparison?${sp.toString()}`, options);
   },
   createOrder: (data: { marketId: string; cropName: string; quantity: number; agreedPrice: number }) =>
     api.post<{ success: boolean; order: any }>('/market/orders', data),

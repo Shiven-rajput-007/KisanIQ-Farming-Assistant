@@ -63,10 +63,12 @@ function WeatherCard({ weather, farmingNote, className, onClick }: WeatherCardPr
           <div>
             <p className="text-xs font-medium text-sand-600 mb-1">{t('weather.title')}</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-bold text-sand-900">{weather.temperature}°</span>
+              <span className="text-4xl font-bold text-sand-900">
+                {typeof weather.temperature === 'number' ? `${Math.round(weather.temperature)}°` : '--'}
+              </span>
             </div>
             <p className="text-sm text-sand-700 mt-0.5">
-              {t(`weather.conditions.${weather.condition}`)}
+              {weather.condition ? t(`weather.conditions.${weather.condition}`, { defaultValue: weather.condition }) : ''}
             </p>
           </div>
           <span className="text-4xl">{WEATHER_ICONS[weather.condition] || '☀️'}</span>
@@ -75,15 +77,15 @@ function WeatherCard({ weather, farmingNote, className, onClick }: WeatherCardPr
         <div className="flex items-center gap-4 mt-4 pt-3 border-t border-sand-200">
           <div className="flex items-center gap-1.5 text-sm text-sand-600">
             <CloudRain className="h-4 w-4 text-blue-500" />
-            <span>{weather.rainProbability}%</span>
+            <span>{typeof weather.rainProbability === 'number' ? `${weather.rainProbability}%` : '--'}</span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-sand-600">
             <Droplets className="h-4 w-4 text-blue-400" />
-            <span>{weather.humidity}%</span>
+            <span>{typeof weather.humidity === 'number' ? `${weather.humidity}%` : '--'}</span>
           </div>
           <div className="flex items-center gap-1.5 text-sm text-sand-600">
             <Wind className="h-4 w-4 text-sand-500" />
-            <span>{weather.windSpeed} km/h</span>
+            <span>{typeof weather.windSpeed === 'number' ? `${weather.windSpeed} km/h` : '--'}</span>
           </div>
         </div>
 

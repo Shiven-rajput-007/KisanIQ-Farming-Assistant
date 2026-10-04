@@ -34,11 +34,14 @@ export default function MarketPage() {
   const { farmer } = useAuth();
   const { data: cropsData } = useCrops();
   const [selectedCrop, setSelectedCrop] = useState('Wheat');
-  const [selectedQuantity, setSelectedQuantity] = useState(100);
+  const [selectedQuantity, setSelectedQuantity] = useState(50);
 
   useEffect(() => {
     if (cropsData?.crops && cropsData.crops.length > 0 && cropsData.crops[0].name) {
       setSelectedCrop(cropsData.crops[0].name);
+      if (cropsData.crops[0].expectedYield && Number(cropsData.crops[0].expectedYield) > 0) {
+        setSelectedQuantity(Number(cropsData.crops[0].expectedYield));
+      }
     }
   }, [cropsData]);
 
@@ -292,6 +295,16 @@ export default function MarketPage() {
               )}
             </div>
           </div>
+
+          {/* Broader geographic scope note badge */}
+          {apiStatus?.scopeNote && (
+            <div className="flex items-center gap-2 px-3.5 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
+              <span className="font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-900 text-[10px] uppercase tracking-wide">
+                {apiStatus.scope === 'national' ? 'National Tier' : apiStatus.scope === 'state' ? 'State Tier' : 'District Tier'}
+              </span>
+              <span className="font-medium">{apiStatus.scopeNote}</span>
+            </div>
+          )}
 
           {/* Important note */}
           <Card className="bg-agri-gold-50 border-agri-gold-300/50">

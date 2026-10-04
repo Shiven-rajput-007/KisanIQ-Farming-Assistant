@@ -56,27 +56,16 @@ export async function getDashboard(req: AuthRequest, res: Response): Promise<voi
     const hasCoords =
       typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon);
 
-    // Fetch weather, recommendations, crops, and alerts
-    let weatherData: any = null;
-    let weatherUnavailable = false;
-    if (hasCoords) {
-      try {
-        weatherData = await weatherService.getWeather(lat!, lon!);
-      } catch (wErr: any) {
-        console.warn('[Dashboard] Weather service notice:', wErr.message);
-        weatherUnavailable = true;
-      }
-    } else {
-      weatherUnavailable = true;
-    }
+    const userDistrict = req.query.district ? String(req.query.district) : (farmer?.district || undefined);
+    const userState = req.query.state ? String(req.query.state) : (farmer?.state || undefined);
 
-    const [recommendations, cropRes, alertRes] = await Promise.all([
-      decisionEngine.generateRecommendations(farmerId, lat, lon),
+    // 3. Fast DB queries for farmer's crops and alerts
+    const [cropRes, alertRes] = await Promise.all([
       farmerId !== 'guest'
-        ? db.query('SELECT * FROM crops WHERE farmer_id = $1 ORDER BY created_at DESC', [farmerId])
+        ? db.query('SELECT * FROM crops WHERE farmer_id = $1 ORDER BY created_at DESC', [farmerId]).catch(() => ({ rows: [] }))
         : Promise.resolve({ rows: [] }),
       farmerId !== 'guest'
-        ? db.query('SELECT * FROM alerts WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 1', [farmerId])
+        ? db.query('SELECT * FROM alerts WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 1', [farmerId]).catch(() => ({ rows: [] }))
         : Promise.resolve({ rows: [] }),
     ]);
 
@@ -99,8 +88,40 @@ export async function getDashboard(req: AuthRequest, res: Response): Promise<voi
     }));
 
     const primaryCropName = crops[0]?.name || (req.query.crop as string) || 'Wheat';
-    const marketComp = await marketService.getMarketComparison(farmerId, primaryCropName, 100, lat, lon);
-    const bestMarket = marketComp.markets.find(m => m.isRecommended) || marketComp.markets[0] || null;
+
+    // 4. Parallel fetch for Weather, Recommendations, and Market Comparison (Total Fault Isolation)
+    const weatherPromise = hasCoords
+      ? weatherService.getWeather(lat!, lon!).catch((err) => {
+          console.warn('[Dashboard] Weather fetch notice:', err.message);
+          return null;
+        })
+      : Promise.resolve(null);
+
+    const recPromise = decisionEngine
+      .generateRecommendations(farmerId, lat, lon)
+      .catch((err) => {
+        console.warn('[Dashboard] Decision engine notice:', err.message);
+        return [];
+      });
+
+    const marketPromise = marketService
+      .getMarketComparison(farmerId, primaryCropName, 100, lat, lon, userDistrict, userState)
+      .catch((err) => {
+        console.warn('[Dashboard] Market comparison notice:', err.message);
+        return { markets: [], bestPracticalOption: '', partialSelling: null, whyExplanation: null };
+      });
+
+    const [weatherData, recommendations, marketResult] = await Promise.all([
+      weatherPromise,
+      recPromise,
+      marketPromise,
+    ]);
+
+    const weatherUnavailable = !weatherData;
+    const bestMarket =
+      marketResult?.markets && marketResult.markets.length > 0
+        ? marketResult.markets.find((m: any) => m.isRecommended) || marketResult.markets[0]
+        : null;
 
     const alerts = alertRes.rows.map((a: any) => ({
       id: a.id,

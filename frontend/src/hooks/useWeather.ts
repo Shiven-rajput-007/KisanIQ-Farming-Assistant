@@ -9,7 +9,7 @@ export function useWeather() {
   const [error, setError] = useState<string | null>(null);
   const [isLocationRequired, setIsLocationRequired] = useState(false);
 
-  const fetchWeather = useCallback(async () => {
+  const fetchWeather = useCallback(async (signal?: AbortSignal) => {
     if (
       location.latitude === null ||
       location.longitude === null ||
@@ -27,9 +27,14 @@ export function useWeather() {
     setError(null);
     setIsLocationRequired(false);
     try {
-      const res = await weatherApi.getWeather(location.latitude, location.longitude);
-      setData(res);
+      const res = await weatherApi.getWeather(location.latitude, location.longitude, { signal });
+      if (!signal?.aborted) {
+        setData(res);
+      }
     } catch (err: any) {
+      if (err.name === 'AbortError' || signal?.aborted) {
+        return; // Ignore aborted requests
+      }
       console.error('[useWeather] API fetch notice:', err.message);
       if (err.data?.code === 'LOCATION_REQUIRED' || err.message?.includes('LOCATION_REQUIRED')) {
         setIsLocationRequired(true);
@@ -38,13 +43,19 @@ export function useWeather() {
       }
       setData(null);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [location.latitude, location.longitude, location.isConfigured]);
 
   useEffect(() => {
-    fetchWeather();
+    const controller = new AbortController();
+    fetchWeather(controller.signal);
+    return () => {
+      controller.abort();
+    };
   }, [fetchWeather]);
 
-  return { data, isLoading, error, isLocationRequired, refetch: fetchWeather };
+  return { data, isLoading, error, isLocationRequired, refetch: () => fetchWeather() };
 }

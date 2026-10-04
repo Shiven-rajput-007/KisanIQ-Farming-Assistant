@@ -42,10 +42,10 @@ export async function request<T>(endpoint: string, options?: RequestInit): Promi
 }
 
 export const api = {
-  get: <T>(endpoint: string) => request<T>(endpoint, { method: 'GET' }),
-  post: <T>(endpoint: string, body?: any) =>
-    request<T>(endpoint, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
-  put: <T>(endpoint: string, body?: any) =>
-    request<T>(endpoint, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
-  delete: <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
+  get: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'GET' }),
+  post: <T>(endpoint: string, body?: any, options?: RequestInit) =>
+    request<T>(endpoint, { ...options, method: 'POST', body: body ? JSON.stringify(body) : undefined }),
+  put: <T>(endpoint: string, body?: any, options?: RequestInit) =>
+    request<T>(endpoint, { ...options, method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
+  delete: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'DELETE' }),
 };

@@ -9,7 +9,7 @@ export function useMarket(crop: string = 'Wheat', quantity: number = 100) {
   const [error, setError] = useState<string | null>(null);
   const [isFallback, setIsFallback] = useState(false);
 
-  const fetchMarket = useCallback(async () => {
+  const fetchMarket = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -19,23 +19,35 @@ export function useMarket(crop: string = 'Wheat', quantity: number = 100) {
         location.latitude ?? undefined,
         location.longitude ?? undefined,
         location.district,
-        location.state
+        location.state,
+        { signal }
       );
-      setData(res);
-      setIsFallback(false);
+      if (!signal?.aborted) {
+        setData(res);
+        setIsFallback(false);
+      }
     } catch (err: any) {
+      if (err.name === 'AbortError' || signal?.aborted) {
+        return; // Ignore aborted requests
+      }
       console.error('[useMarket] API fetch failed:', err.message);
       setIsFallback(false);
       setError(err.message || 'Failed to load market prices');
       setData(null);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, [crop, quantity, location.latitude, location.longitude, location.district, location.state]);
 
   useEffect(() => {
-    fetchMarket();
+    const controller = new AbortController();
+    fetchMarket(controller.signal);
+    return () => {
+      controller.abort();
+    };
   }, [fetchMarket]);
 
-  return { data, isLoading, error, isFallback, refetch: fetchMarket };
+  return { data, isLoading, error, isFallback, refetch: () => fetchMarket() };
 }

@@ -141,3 +141,23 @@ export async function getCurrentWeather(req: AuthRequest, res: Response): Promis
     res.status(500).json({ success: false, error: error.message });
   }
 }
+
+/**
+ * GET /api/weather/status
+ * Safe observability endpoint without exposing secrets
+ */
+export async function getWeatherStatus(_req: AuthRequest, res: Response): Promise<void> {
+  let cacheAvailable = false;
+  try {
+    const test = await db.query('SELECT 1 FROM weather_cache LIMIT 1');
+    cacheAvailable = true;
+  } catch (err) {
+    cacheAvailable = false;
+  }
+
+  res.json({
+    openMeteoConfigured: weatherService.isOpenMeteoConfigured(),
+    weatherApiConfigured: weatherService.isWeatherApiConfigured(),
+    cacheAvailable,
+  });
+}
