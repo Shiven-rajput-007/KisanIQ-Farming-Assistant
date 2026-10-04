@@ -147,7 +147,10 @@ export async function runMigrations(): Promise<void> {
   const candidates = [
     path.resolve(__dirname, 'schema.sql'),
     path.resolve(__dirname, '../db/schema.sql'),
+    path.resolve(__dirname, '../../db/schema.sql'),
     path.resolve(__dirname, '../../server/db/schema.sql'),
+    path.resolve(process.cwd(), 'db/schema.sql'),
+    path.resolve(process.cwd(), 'server/db/schema.sql'),
   ];
   const schemaPath = candidates.find(p => fs.existsSync(p));
   if (!schemaPath) {

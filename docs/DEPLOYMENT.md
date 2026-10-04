@@ -36,7 +36,7 @@
    - **Name:** `kisaniq-backend`
    - **Root Directory:** `server`
    - **Runtime:** `Node`
-   - **Build Command:** `npm install && npm run build`
+   - **Build Command:** `npm install --include=dev && npm run build`
    - **Start Command:** `node dist/server.js`
    - **Plan:** Free or Starter
 4. Add the following **Environment Variables** in the Render Dashboard:

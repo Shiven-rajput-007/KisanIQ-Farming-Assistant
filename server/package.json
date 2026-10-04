@@ -8,7 +8,13 @@
     "dev": "tsx watch server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "seed": "tsx db/seed.ts"
+    "seed": "tsx db/seed.ts",
+    "test:mandi": "tsx tests/mandi.test.ts",
+    "test:fullstack": "tsx verify-fullstack.ts",
+    "test:api": "tsx scripts/test_api_suite.ts",
+    "test:verify-all": "tsx verify-all.ts",
+    "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc --project tsconfig.test.json --noEmit"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.2.14",
