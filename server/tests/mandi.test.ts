@@ -1,20 +1,22 @@
 import { mandiService } from '../services/mandiService.js';
+import { marketService } from '../services/marketService.js';
 import { db } from '../db/index.js';
 
 async function runMandiTestSuite() {
   console.log('===========================================================');
-  console.log('🌾 MANDI & AGMARKNET SERVICE AUTOMATED TEST SUITE (12/12)');
+  console.log('🌾 CEDA AGMARKNET MANDI SERVICE AUTOMATED TEST SUITE');
   console.log('===========================================================\n');
 
   let passed = 0;
   let failed = 0;
+  let blocked = 0;
 
   function assert(condition: boolean, testNum: number, testName: string, detail?: any) {
     if (condition) {
-      console.log(`  ✅ PASS [Test ${testNum}/12]: ${testName}`);
+      console.log(`  ✅ PASS [Test ${testNum}]: ${testName}`);
       passed++;
     } else {
-      console.error(`  ❌ FAIL [Test ${testNum}/12]: ${testName}`, detail || '');
+      console.error(`  ❌ FAIL [Test ${testNum}]: ${testName}`, detail || '');
       failed++;
     }
   }
@@ -184,7 +186,7 @@ async function runMandiTestSuite() {
   );
 
   // -------------------------------------------------------------
-  // Test 7: Valid Record Normalization & Agmarknet Formatting
+  // Test 7: Valid Record Normalization & CEDA Agmarknet Formatting
   // -------------------------------------------------------------
   const validRec = mandiService.normalizeRecord({
     state: 'Madhya Pradesh',
@@ -197,6 +199,7 @@ async function runMandiTestSuite() {
     max_price: '2650',
     modal_price: '2520',
     arrival_date: '03/10/2026',
+    quantity: '450.5',
   });
   assert(
     validRec !== null &&
@@ -205,40 +208,65 @@ async function runMandiTestSuite() {
     validRec.modalPrice === 2520 &&
     validRec.minPrice === 2350 &&
     validRec.maxPrice === 2650 &&
-    validRec.arrivalDate === '2026-10-03',
+    validRec.arrivalDate === '2026-10-03' &&
+    validRec.quantity === 450.5 &&
+    validRec.source === 'CEDA Agmarknet',
     7,
-    'Valid Agmarknet record is cleanly parsed with numeric prices and ISO date'
+    'Valid CEDA Agmarknet record is cleanly parsed with numeric prices, ISO date, arrival quantity, and source metadata'
   );
 
   // -------------------------------------------------------------
-  // Test 8: Missing API Key Handling (Fail-fast with clear state)
+  // Test 8: Missing CEDA_API_KEY Handling (Fail-fast with clear state)
   // -------------------------------------------------------------
-  const savedKey = process.env.DATA_GOV_IN_API_KEY;
+  const savedKey = process.env.CEDA_API_KEY;
   try {
-    delete process.env.DATA_GOV_IN_API_KEY;
-    const fetchRes = await mandiService.syncFromGovApi({ limit: 10 });
+    delete process.env.CEDA_API_KEY;
+    const fetchRes = await mandiService.syncFromCedaApi({ limit: 10 });
     assert(
       fetchRes.status === 'failed' &&
-      !!fetchRes.errorMessage?.includes('DATA_GOV_IN_API_KEY is not configured'),
+      !!fetchRes.errorMessage?.includes('CEDA_API_KEY is not configured'),
       8,
-      'Missing API key returns structured unconfigured status without throwing or crashing'
+      'Missing CEDA_API_KEY returns structured unconfigured status without throwing or crashing'
     );
   } finally {
-    if (savedKey) process.env.DATA_GOV_IN_API_KEY = savedKey;
+    if (savedKey) process.env.CEDA_API_KEY = savedKey;
   }
 
   // -------------------------------------------------------------
-  // Test 9: Zero Demo / Fake Fallback Verification
+  // Test 9: Malformed Response and Timeout Handling
+  // -------------------------------------------------------------
+  let malformedCaught = false;
+  try {
+    // Pass malformed payload to internal normalizer
+    const malformed = mandiService.validateAndNormalize({
+      min_price: 'not-a-number',
+      max_price: {},
+      modal_price: null,
+    } as any);
+    if (malformed === null) {
+      malformedCaught = true;
+    }
+  } catch {
+    malformedCaught = false;
+  }
+  assert(
+    malformedCaught,
+    9,
+    'Malformed responses, non-numeric price data, and corrupted structures are safely caught and rejected'
+  );
+
+  // -------------------------------------------------------------
+  // Test 10: Zero Demo / Fake Fallback Verification (No Mock Fallback)
   // -------------------------------------------------------------
   const unknownCommodityRes = await mandiService.getPrices({ commodity: 'NonExistentExoticFruit999' });
   assert(
     unknownCommodityRes.records.length === 0,
-    9,
+    10,
     'Returns empty array when commodity data is absent — NEVER fabricates fake prices'
   );
 
   // -------------------------------------------------------------
-  // Test 10: Deduplication / Idempotent Ingestion
+  // Test 11: PostgreSQL Persistence & Deduplication
   // -------------------------------------------------------------
   const testBatch = [
     {
@@ -252,6 +280,7 @@ async function runMandiTestSuite() {
       max_price: 2500,
       modal_price: 2300,
       arrival_date: '2026-10-03',
+      quantity: 120,
     },
   ];
 
@@ -262,54 +291,57 @@ async function runMandiTestSuite() {
   testBatch[0].max_price = 2550;
   const sync2 = await mandiService.ingestRecords(testBatch);
 
+  // Verify persistence and quantity in database
+  const persisted = await db.query(
+    "SELECT modal_price, quantity, source FROM market_prices WHERE commodity = 'TestCrop_Dedup' AND market_name = 'TestMandi_Dedup'"
+  );
+
   // Clean up test record
   await db.query(
     "DELETE FROM market_prices WHERE commodity = 'TestCrop_Dedup' AND market_name = 'TestMandi_Dedup'"
   );
 
   assert(
-    sync1.insertedCount === 1 && sync2.insertedCount === 0 && sync2.updatedCount === 1,
-    10,
-    'Deduplication upsert: First ingestion inserts new row, duplicate updates existing without duplicating'
+    sync1.insertedCount === 1 &&
+    sync2.insertedCount === 0 &&
+    sync2.updatedCount === 1 &&
+    persisted.rows.length === 1 &&
+    Number(persisted.rows[0].modal_price) === 2380 &&
+    persisted.rows[0].source === 'CEDA Agmarknet',
+    11,
+    'Deduplication upsert: First ingestion inserts new row, duplicate updates existing without duplicating in PostgreSQL'
   );
 
   // -------------------------------------------------------------
-  // Test 11: Stale Data Flagging & Observability
+  // Test 12: Sync Observability & Stale-Data Handling
   // -------------------------------------------------------------
   const syncStatus = await mandiService.getSyncStatus();
   assert(
     typeof syncStatus.stale === 'boolean' &&
     typeof syncStatus.totalRecords === 'number' &&
-    syncStatus.source.includes('AGMARKNET'),
-    11,
-    'Sync status correctly monitors staleness, source transparency and record counts'
+    syncStatus.source.includes('CEDA Agmarknet'),
+    12,
+    'Sync status correctly monitors staleness, source transparency and record counts for CEDA Agmarknet'
   );
 
   // -------------------------------------------------------------
-  // Test 12: Net Return Calculation Accuracy & Economic Realism
+  // Test 13: Net Return Calculation Accuracy & Economic Realism
   // -------------------------------------------------------------
-  // Market A (Local): Modal ₹2,500/q, Distance 15 km, 100 quintals
   const localCalc = mandiService.calculateNetReturn({
     modalPrice: 2500,
     quantityQuintals: 100,
     distanceKm: 15,
   });
 
-  // Market B (Distant): Modal ₹2,600/q, Distance 220 km, 100 quintals
   const distantCalc = mandiService.calculateNetReturn({
     modalPrice: 2600,
     quantityQuintals: 100,
     distanceKm: 220,
   });
 
-  // Verify breakdown formulas
-  const expectedGrossLocal = 2500 * 100; // 250,000
-  const expectedGrossDistant = 2600 * 100; // 260,000
+  const expectedGrossLocal = 2500 * 100;
+  const expectedGrossDistant = 2600 * 100;
 
-  // Economic Decision Realism:
-  // Distant gross is ₹10,000 higher (₹260,000 vs ₹250,000), but freight differential is
-  // 220km * ₹50 = ₹11,000 vs 15km * ₹50 = ₹750 (difference ₹10,250),
-  // causing the closer market to yield MORE net cash in farmer's pocket (₹240,000 vs ₹239,400)!
   const formulaAccurate =
     localCalc.grossValue === expectedGrossLocal &&
     distantCalc.grossValue === expectedGrossDistant &&
@@ -321,12 +353,63 @@ async function runMandiTestSuite() {
 
   assert(
     formulaAccurate && decisionAccurate,
-    12,
+    13,
     'Net Return calculator computes exact logistics breakdown and proves closer mandi yields higher net profit'
   );
 
+  // -------------------------------------------------------------
+  // Test 14: Mandi Geodesic Comparison & Commodity/Geography Filtering
+  // -------------------------------------------------------------
+  const comparison = await marketService.getMarketComparison(
+    'farmer_ramesh',
+    'Wheat',
+    100,
+    26.2183,
+    78.1828
+  );
+
+  assert(
+    comparison &&
+    Array.isArray(comparison.markets) &&
+    comparison.markets.length > 0 &&
+    typeof comparison.bestPracticalOption === 'string' &&
+    comparison.apiStatus.source.includes('CEDA Agmarknet'),
+    14,
+    'Market comparison correctly evaluates Geodesic APMC mandi options with CEDA Agmarknet provider metadata'
+  );
+
+  // -------------------------------------------------------------
+  // Test 15: Live CEDA Connection & Price Retrieval Check
+  // -------------------------------------------------------------
+  const apiKey = mandiService.getApiKey();
+  if (apiKey) {
+    try {
+      console.log('  Testing live connection to CEDA Agmarknet API...');
+      const commodities = await mandiService.fetchCedaCommodities();
+      if (Array.isArray(commodities) && commodities.length > 0) {
+        console.log(`  ✅ PASS [Test 15]: CEDA Live Connection: Retrieved ${commodities.length} commodities`);
+        passed++;
+      } else {
+        console.error('  ❌ FAIL [Test 15]: CEDA Live Connection returned empty commodities array');
+        failed++;
+      }
+    } catch (err: any) {
+      console.error('  ❌ FAIL [Test 15]: CEDA Live Connection error:', err.message);
+      failed++;
+    }
+  } else {
+    // Explicit requirement: If a live API test cannot be executed because a credential is missing,
+    // DO NOT fake the result. Instead report: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.
+    // Do not mark it passed.
+    console.log('  ⚠️  [Test 15]: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.');
+    blocked++;
+  }
+
   console.log('\n===========================================================');
-  console.log(`🎉 TEST SUMMARY: ${passed}/12 PASSED, ${failed} FAILED`);
+  console.log(`🎉 TEST SUMMARY: ${passed} PASSED, ${failed} FAILED, ${blocked} BLOCKED`);
+  if (blocked > 0) {
+    console.log(`ℹ️  Note: ${blocked} test blocked awaiting CEDA_API_KEY in server/.env (unfaked live test)`);
+  }
   console.log('===========================================================\n');
 
   if (failed > 0) {

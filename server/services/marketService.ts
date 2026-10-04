@@ -103,20 +103,20 @@ export class MarketService {
       }
     }
 
-    const apiKey = process.env.DATA_GOV_IN_API_KEY;
-    const isGovApiConfigured = Boolean(apiKey && apiKey.trim() !== '');
+    const apiKey = process.env.CEDA_API_KEY;
+    const isCedaConfigured = Boolean(apiKey && apiKey.trim() !== '');
 
     const apiStatus = {
-      configured: isGovApiConfigured,
-      source: isGovApiConfigured
-        ? 'Government of India Agmarknet Live API (data.gov.in)'
-        : 'Official State APMC Mandi Board Records (Agmarknet Database)',
-      isLive: isGovApiConfigured,
-      ...(isGovApiConfigured
-        ? { note: 'Live daily mandi price streaming active via data.gov.in API.' }
+      configured: isCedaConfigured,
+      source: isCedaConfigured
+        ? 'CEDA Agmarknet Live API (api.ceda.ashoka.edu.in)'
+        : 'CEDA Agmarknet Agricultural-Market Records (Database)',
+      isLive: isCedaConfigured,
+      ...(isCedaConfigured
+        ? { note: 'Live daily mandi price streaming active via CEDA Agmarknet API.' }
         : {
-            missingKey: 'DATA_GOV_IN_API_KEY',
-            note: 'Configure DATA_GOV_IN_API_KEY in server/.env to enable live daily mandi streaming. Currently using verified APMC market records.',
+            missingKey: 'CEDA_API_KEY',
+            note: 'Configure CEDA_API_KEY in server/.env to enable live daily mandi streaming. Currently using verified APMC market records.',
           }),
     };
 
@@ -197,7 +197,7 @@ export class MarketService {
         demand: row.demand || 'medium',
         isRecommended: false,
         recommendationRank: 0,
-        source: row.price_source || 'Agmarknet / APMC Market Board',
+        source: row.price_source || 'CEDA Agmarknet',
         lastUpdated: row.price_date ? new Date(row.price_date).toISOString() : new Date().toISOString(),
         isDemo: false,
       };

@@ -173,7 +173,7 @@ export async function getSyncStatus(_req: AuthRequest, res: Response): Promise<v
 
 /**
  * POST /api/market/sync
- * Protected endpoint for triggering Agmarknet ingestion
+ * Protected endpoint for triggering CEDA Agmarknet ingestion
  */
 export async function triggerMandiSync(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -189,12 +189,14 @@ export async function triggerMandiSync(req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const { state, commodity, limit = 100, offset = 0 } = req.body || {};
-    const result = await mandiService.syncFromGovApi({
+    const { state, district, commodity, fromDate, toDate, limit = 100 } = req.body || {};
+    const result = await mandiService.syncFromCedaApi({
       state,
+      district,
       commodity,
+      fromDate,
+      toDate,
       limit: Number(limit) || 100,
-      offset: Number(offset) || 0,
     });
 
     if (result.status === 'failed') {
@@ -208,7 +210,7 @@ export async function triggerMandiSync(req: AuthRequest, res: Response): Promise
 
     res.status(200).json({
       success: true,
-      message: 'Mandi prices synchronized successfully from AGMARKNET',
+      message: 'Mandi prices synchronized successfully from CEDA Agmarknet',
       result,
     });
   } catch (error: any) {

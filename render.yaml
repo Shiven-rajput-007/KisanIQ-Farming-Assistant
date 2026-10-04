@@ -19,8 +19,10 @@ services:
         value: 1440
       - key: CORS_ORIGINS
         sync: false
-      - key: DATA_GOV_IN_API_KEY
+      - key: CEDA_API_KEY
         sync: false
+      - key: CEDA_BASE_URL
+        value: https://api.ceda.ashoka.edu.in/v1
       - key: MANDI_SYNC_SECRET
         generateValue: true
       - key: OPEN_METEO_BASE_URL

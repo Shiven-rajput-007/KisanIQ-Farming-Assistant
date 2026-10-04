@@ -100,7 +100,7 @@ export default function HomePage() {
             पेरणीपासून ते विक्रीपर्यंत, प्रत्येक टप्प्यावर हुशार निर्णय
           </h1>
           <p className="text-sm sm:text-base text-sand-100/95 mt-2 max-w-xl font-normal">
-            हवामान, माती आरोग्य, पीक संरक्षण आणि भारत सरकारच्या अधिकृत AGMARKNET बाजारभावावर आधारित निर्णय.
+            हवामान, माती आरोग्य, पीक संरक्षण आणि CEDA Agmarknet अधिकृत बाजारभावावर आधारित निर्णय.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 mt-5">
@@ -264,7 +264,7 @@ export default function HomePage() {
         <div className="flex flex-wrap items-center justify-center gap-3 font-medium text-sand-600">
           <span className="flex items-center gap-1">
             <ShieldCheck className="h-4 w-4 text-agri-forest-700" />
-            भारत सरकार AGMARKNET अधिकृत बाजार दर
+            CEDA Agmarknet अधिकृत बाजार दर
           </span>
           <span>•</span>
           <span>Open-Meteo व IMD हवामान सेवा</span>

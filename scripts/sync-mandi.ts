@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * KisanIQ — Automated Mandi Synchronization Script
- * Ingests daily market arrival bulletins from the Government of India AGMARKNET API (data.gov.in)
+ * Ingests daily market arrival bulletins from the CEDA Agmarknet API (api.ceda.ashoka.edu.in)
  */
 
 import dotenv from 'dotenv';
@@ -20,7 +20,7 @@ import { runMigrations } from '../server/db/index.js';
 
 async function main() {
   console.log('====================================================');
-  console.log('🌾 KisanIQ Mandi Price Synchronization');
+  console.log('🌾 KisanIQ Mandi Price Synchronization (CEDA Agmarknet)');
   console.log('====================================================');
   console.log(`Started at: ${new Date().toISOString()}`);
 
@@ -29,9 +29,9 @@ async function main() {
     console.log('[1/2] Ensuring database tables are up to date...');
     await runMigrations();
 
-    // 2. Execute sync with official AGMARKNET resource
-    console.log('[2/2] Connecting to data.gov.in AGMARKNET feed...');
-    const result = await mandiService.syncFromGovApi({
+    // 2. Execute sync with official CEDA Agmarknet API
+    console.log('[2/2] Connecting to CEDA Agmarknet feed...');
+    const result = await mandiService.syncFromCedaApi({
       limit: 100,
     });
 
@@ -46,17 +46,17 @@ async function main() {
     console.log('----------------------------------------------------');
 
     if (result.status === 'failed') {
-      console.warn(`[WARNING] Synchronization reported error: ${result.errorMessage}`);
+      console.warn(`[WARNING] Synchronization reported notice: ${result.errorMessage}`);
       // If API key is missing in local dev, provide helpful instructions without hard erroring
-      if (result.errorMessage?.includes('DATA_GOV_IN_API_KEY')) {
-        console.log('ℹ️  To sync live daily prices, set DATA_GOV_IN_API_KEY in server/.env');
-        console.log('   Register for free at https://data.gov.in');
+      if (result.errorMessage?.includes('CEDA_API_KEY')) {
+        console.log('ℹ️  To sync live daily prices, set CEDA_API_KEY in server/.env');
+        console.log('   Register for an API key at https://api.ceda.ashoka.edu.in/documentation/');
         process.exit(0);
       }
       process.exit(1);
     }
 
-    console.log('✅ Mandi synchronization completed successfully.');
+    console.log('✅ Mandi synchronization completed successfully from CEDA Agmarknet.');
     process.exit(0);
   } catch (error: any) {
     console.error('❌ Mandi synchronization encountered unhandled error:', error);

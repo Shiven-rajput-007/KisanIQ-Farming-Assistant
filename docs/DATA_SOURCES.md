@@ -3,28 +3,36 @@
 
 ---
 
-## 1. Agricultural Market Prices (Mandi)
+## 1. Agricultural Market Prices & Quantities (Mandi)
 
-- **Official Provider:** Government of India — Open Government Data (OGD) Platform / Directorate of Marketing & Inspection (DMI) / AGMARKNET.
-- **Dataset Title:** Current Daily Price of Various Commodities from Various Markets (Mandi).
-- **Official Resource ID:** `9ef84268-d588-465a-a308-a864a43d0070`
-- **Official API Endpoint Pattern:**  
-  `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=YOUR_KEY&format=json&offset=0&limit=100`
-- **Data Attributes Ingested:**
-  - `state` — Administrative state name
-  - `district` — Market district
-  - `market` — Physical APMC mandi yard
+- **Official Provider:** CEDA Agmarknet Agricultural-Market Data API.
+- **Provider Body:** Centre for Economic Data and Analysis (CEDA), Ashoka University.
+- **Official Documentation Portal:** [https://api.ceda.ashoka.edu.in/documentation/](https://api.ceda.ashoka.edu.in/documentation/)
+- **API Base URL:** `https://api.ceda.ashoka.edu.in/v1` (configurable via `CEDA_BASE_URL`)
+- **Authentication:** Bearer token (`Authorization: Bearer <CEDA_API_KEY>`)
+- **Distinctive Clarification:** This is the **CEDA Agmarknet agricultural-market data API**, which programmatically serves verified Agmarknet commodity, geography, market, price, and arrival quantity records. **It is NOT an e-NAM API.**
+- **Key API Endpoints:**
+  - `GET /agmarknet/commodities` — Complete catalog of agricultural commodities and crop IDs
+  - `GET /agmarknet/geographies` — States, census IDs, and district hierarchies
+  - `POST /agmarknet/markets` — Specific APMC market yards filtered by commodity, state, and district
+  - `POST /agmarknet/prices` — Real minimum, maximum, and modal auction settlement prices
+  - `POST /agmarknet/quantities` — Physical arrival volumes/quantities recorded at APMC mandis
+- **Data Attributes Ingested & Normalized:**
+  - `state` — Administrative state name (resolved from `census_state_id`)
+  - `district` — Market district (resolved from `census_district_id`)
+  - `marketName` — Physical APMC mandi yard (resolved from `market_id`)
   - `commodity` — Agricultural produce (e.g. Wheat, Mustard, Soybean, Onion)
-  - `variety` — Specific botanical / commercial cultivar
-  - `grade` — Quality classification (FAQ / Medium / Grade A)
-  - `arrival_date` — Date of commodity arrival at the mandi
-  - `min_price` — Minimum auction price in ₹/quintal
-  - `max_price` — Maximum auction price in ₹/quintal
-  - `modal_price` — Most frequent auction settlement price in ₹/quintal
-- **Refresh Frequency:** Published daily by APMC market secretaries as physical auctions conclude. Synchronized daily into KisanIQ PostgreSQL.
-- **Data Semantics:** Displayed strictly as *"Latest available mandi price"* alongside the explicit `arrival_date` and our `fetched_at` timestamp. Never labelled as real-time tick-by-tick stock quotes.
-- **Attribution & Terms:** Data provided under the National Data Sharing and Accessibility Policy (NDSAP) of the Government of India.
-- **API Key Security:** Restricted strictly to backend environment configuration (`DATA_GOV_IN_API_KEY`). Never bundled into frontend client assets.
+  - `variety` — Cultivar / variety
+  - `grade` — Quality classification (FAQ / Grade A)
+  - `arrivalDate` — Actual bulletin date of commodity arrival (`YYYY-MM-DD`)
+  - `minPrice` — Minimum auction price in ₹/quintal
+  - `maxPrice` — Maximum auction price in ₹/quintal
+  - `modalPrice` — Most frequent auction settlement price in ₹/quintal
+  - `quantity` — Arrival quantity in quintals / tonnes
+  - `source` — `CEDA Agmarknet`
+- **Refresh Frequency:** Published as physical APMC trading auctions conclude and daily bulletins are finalized. Synchronized into KisanIQ PostgreSQL.
+- **Data Semantics:** Displayed strictly as *"Latest available mandi price"* alongside the explicit source date and `fetched_at` timestamp. Never labelled as tick-by-tick real-time financial trading data.
+- **API Key Security:** Restricted strictly to backend environment configuration (`CEDA_API_KEY`). **Never** bundled into frontend client assets.
 
 ---
 
@@ -70,4 +78,4 @@
 
 - **Official Portal:** [https://www.enam.gov.in](https://www.enam.gov.in)
 - **Integration Status:** Reference & linking only.
-- **Policy:** e-NAM does not currently offer a public, machine-readable open REST API without institutional licensing and bilateral APMC clearance. Therefore, KisanIQ provides official links ("View on e-NAM") and relies on Government of India Open Government Data (AGMARKNET) for machine-readable auction prices. KisanIQ never scrapes e-NAM pages.
+- **Policy:** e-NAM does not currently offer a public, machine-readable open REST API without institutional licensing and bilateral APMC clearance. Therefore, KisanIQ provides official links ("View on e-NAM") and relies on **CEDA Agmarknet API** for standardized, machine-readable auction and arrival prices. KisanIQ never scrapes e-NAM pages.

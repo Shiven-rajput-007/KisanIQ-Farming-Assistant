@@ -272,7 +272,7 @@ export default function MarketPage() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 font-semibold text-agri-forest-900 bg-white px-2 py-0.5 rounded-md border border-sand-300">
                 <Building className="h-3.5 w-3.5 text-agri-gold-600" />
-                स्रोत: भारत सरकार AGMARKNET
+                स्रोत: CEDA Agmarknet
               </span>
               <span className="text-sand-500">
                 दर तारीख: {data.lastUpdated ? new Date(data.lastUpdated).toLocaleDateString('mr-IN') : 'आजचे दर'}

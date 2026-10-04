@@ -1,8 +1,8 @@
-name: Daily Mandi Price Sync
+name: Daily CEDA Agmarknet Price Sync
 
 on:
   schedule:
-    # Runs daily at 18:30 IST (13:00 UTC), after APMC mandi trading and settlement finish
+    # Runs daily at 18:30 IST (13:00 UTC), after APMC mandi trading and CEDA bulletin finalization
     - cron: '0 13 * * *'
   workflow_dispatch:
     inputs:

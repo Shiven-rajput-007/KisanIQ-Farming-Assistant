@@ -187,6 +187,7 @@ model MarketPrice {
   variety          String?
   grade            String?
   arrivalDate      DateTime? @map("arrival_date")
+  quantity         Decimal?  @db.Decimal(10, 2)
   cropName         String    @default("Wheat") @map("crop_name")
   pricePerQuintal  Decimal   @map("price_per_quintal") @db.Decimal(10, 2)
   minPrice         Decimal?  @map("min_price") @db.Decimal(10, 2)
@@ -195,7 +196,7 @@ model MarketPrice {
   priceChange      Decimal?  @default(0.0) @map("price_change") @db.Decimal(4, 2)
   priceTrend       String    @default("stable") @map("price_trend")
   demand           String    @default("medium")
-  source           String?   @default("Government of India / AGMARKNET")
+  source           String?   @default("CEDA Agmarknet")
   fetchedAt        DateTime? @default(now()) @map("fetched_at")
   date             DateTime  @default(now())
   createdAt        DateTime  @default(now()) @map("created_at")
@@ -216,7 +217,7 @@ model MandiSyncLog {
   startedAt     DateTime  @default(now()) @map("started_at")
   completedAt   DateTime? @map("completed_at")
   status        String    @default("running")
-  source        String    @default("data.gov.in / AGMARKNET")
+  source        String    @default("CEDA Agmarknet")
   fetchedCount  Int       @default(0) @map("fetched_count")
   insertedCount Int       @default(0) @map("inserted_count")
   updatedCount  Int       @default(0) @map("updated_count")

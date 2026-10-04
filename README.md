@@ -17,9 +17,9 @@ Node.js + Express + TypeScript Backend (Port 8000)
         │
    ┌────┴────────────────────────┬────────────────────────┬────────────────────────┐
    ▼                             ▼                        ▼                        ▼
-PostgreSQL Database        Open-Meteo API           Explainable Decision     Soil Health & NABL
-(Embedded PGlite or       (Live agricultural       Engine (Rules + FAO-56   Lab System (7-Stage
-External PostgreSQL)       weather & forecast)      + Mandi Optimization)    Tracking & Agronomy)
+PostgreSQL Database        Open-Meteo API           Explainable Decision     CEDA Agmarknet API
+(Embedded PGlite or       (Live agricultural       Engine (Rules + FAO-56   (Official Mandi
+External PostgreSQL)       weather & forecast)      + Mandi Optimization)    Prices & Quantities)
 ```
 
 ---
@@ -54,12 +54,14 @@ Default settings:
 ```ini
 PORT=8000
 DATABASE_URL=
-JWT_SECRET=kisaniq-super-secret-production-key-2026
+JWT_SECRET_KEY=kisaniq-super-secret-production-key-2026
 FRONTEND_URL=http://localhost:5173
-VITE_API_BASE_URL=http://localhost:8000/api
-WEATHER_API_KEY=
+VITE_API_URL=http://localhost:8000/api
+CEDA_API_KEY=
+CEDA_BASE_URL=https://api.ceda.ashoka.edu.in/v1
+OPEN_METEO_BASE_URL=https://api.open-meteo.com
 ```
-*(Leave `DATABASE_URL` blank to use the embedded PostgreSQL database automatically).*
+*(Leave `DATABASE_URL` blank to use the embedded PostgreSQL database automatically; configure `CEDA_API_KEY` for live CEDA Agmarknet price synchronization).*
 
 ### 5. Install Dependencies
 Install dependencies for both backend and frontend from the root workspace:
@@ -175,8 +177,14 @@ The database schema is defined in both [`server/db/schema.sql`](server/db/schema
 - `POST /api/recommendations/:id/complete` — Mark action completed in database
 - `GET /api/risk/assessment` — Multi-factor farm risk index (0–100)
 
-### Mandi Intelligence & Direct Marketplace
+### Mandi Intelligence (CEDA Agmarknet API) & Direct Marketplace
+- **Provider**: **CEDA Agmarknet API** ([https://api.ceda.ashoka.edu.in/documentation/](https://api.ceda.ashoka.edu.in/documentation/)) — Programmatically serves verified Agmarknet commodities, geographies, markets, prices, and quantities. *(Note: This is an Agmarknet data API, NOT an e-NAM API).*
+- `GET /api/market/prices` — Real CEDA Agmarknet market prices with state, district, market, and commodity filtering
+- `GET /api/market/mandis` — Directory of APMC mandis
 - `GET /api/market/comparison` — Geodesic APMC mandi comparisons, freight costs, and net returns
+- `GET /api/market/decision` — Transparent net return calculation breakdown
+- `GET /api/market/sync-status` — Ingestion observability, staleness flags, and sync logs
+- `POST /api/market/sync` — Protected trigger for automated daily CEDA Agmarknet bulletin sync
 - `POST /api/market/orders` — Book transport and create farm-gate logistics order
 - `GET /api/marketplace/listings` — Browse verified crop listings
 - `POST /api/marketplace/listings` — Publish direct crop listing

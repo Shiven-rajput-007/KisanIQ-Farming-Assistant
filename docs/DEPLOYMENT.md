@@ -12,7 +12,7 @@
 1. **Neon Account:** [https://neon.tech](https://neon.tech)
 2. **Render Account:** [https://render.com](https://render.com)
 3. **Netlify Account:** [https://netlify.com](https://netlify.com)
-4. **Government Data API Key:** [https://data.gov.in](https://data.gov.in) (Free registration for OGD Agmarknet resource)
+4. **CEDA Agmarknet API Key:** [https://api.ceda.ashoka.edu.in/documentation/](https://api.ceda.ashoka.edu.in/documentation/) (Official API documentation & registration)
 
 ---
 
@@ -31,7 +31,7 @@
 ## Step 2: Deploy Backend Web Service on Render
 
 1. Log into **Render** and click **New > Web Service**.
-2. Connect your GitHub repository (`antigravitry` / `kisaniq`).
+2. Connect your GitHub repository (`Shiven-rajput-007/KisanIQ-Farming-Assistant`).
 3. Configure the service settings:
    - **Name:** `kisaniq-backend`
    - **Root Directory:** `server`
@@ -50,7 +50,8 @@
 | `JWT_ALGORITHM` | `HS256` | Token signing algorithm |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `1440` | 24-hour session lifetime |
 | `CORS_ORIGINS` | `https://your-site.netlify.app,http://localhost:5173` | Allowed frontend domains (comma-separated) |
-| `DATA_GOV_IN_API_KEY` | *(Your 40-character data.gov.in API key)* | Official Agmarknet data access key |
+| `CEDA_API_KEY` | *(Your CEDA Agmarknet Bearer token)* | Access key for CEDA Agmarknet API |
+| `CEDA_BASE_URL` | `https://api.ceda.ashoka.edu.in/v1` | CEDA Agmarknet production endpoint |
 | `MANDI_SYNC_SECRET` | *(Generate a random 32-char token)* | Protects the `POST /api/market/sync` trigger |
 | `OPEN_METEO_BASE_URL` | `https://api.open-meteo.com` | Meteorological endpoint |
 
@@ -116,7 +117,6 @@ This applies all 25 production relational tables and indexes to your Neon Postgr
 2. Add the following repository secrets:
    - `BACKEND_URL`: `https://your-render-backend.onrender.com`
    - `MANDI_SYNC_SECRET`: The exact token configured on Render
-   - `DATA_GOV_IN_API_KEY`: Your data.gov.in API key
 3. The workflow file [`.github/workflows/mandi-sync.yml`](file:///.github/workflows/mandi-sync.yml) triggers automatically once daily at 18:30 IST (13:00 UTC) after mandis upload daily arrivals.
 4. You can also trigger it manually under the **Actions** tab by selecting **Daily Mandi Sync** and clicking **Run workflow**.
 

@@ -397,7 +397,7 @@ CREATE INDEX IF NOT EXISTS idx_soil_reports_farmer_id ON soil_reports(farmer_id)
 CREATE INDEX IF NOT EXISTS idx_soil_reports_field_id ON soil_reports(field_id);
 CREATE INDEX IF NOT EXISTS idx_soil_sensor_readings_field_id ON soil_sensor_readings(field_id);
 
--- Mandi AGMARKNET Ingestion Enhancements
+-- Mandi CEDA Agmarknet Ingestion Enhancements
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS state VARCHAR(100);
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS district VARCHAR(100);
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS market_name VARCHAR(150);
@@ -405,6 +405,7 @@ ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS commodity VARCHAR(100);
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS variety VARCHAR(100);
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS grade VARCHAR(50);
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS arrival_date DATE;
+ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS quantity NUMERIC(10,2);
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS fetched_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE market_prices ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
@@ -420,7 +421,7 @@ CREATE TABLE IF NOT EXISTS mandi_sync_logs (
     started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMPTZ,
     status VARCHAR(20) NOT NULL DEFAULT 'running',
-    source VARCHAR(100) NOT NULL DEFAULT 'data.gov.in / AGMARKNET',
+    source VARCHAR(100) NOT NULL DEFAULT 'CEDA Agmarknet',
     fetched_count INT DEFAULT 0,
     inserted_count INT DEFAULT 0,
     updated_count INT DEFAULT 0,
