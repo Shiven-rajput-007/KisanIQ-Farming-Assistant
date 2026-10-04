@@ -31,7 +31,7 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
 
 /**
  * Optional authentication middleware: if token present, sets user and farmerId;
- * if not present, sets default farmerId ('farmer_ramesh') so the demo / prototype flows work seamlessly!
+ * if not present, leaves req.user and req.farmerId undefined (guest access).
  */
 export function optionalAuth(req: AuthRequest, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;

@@ -20,6 +20,7 @@
     "language": "Voice Language",
     "lang_hi": "Hindi (हिन्दी)",
     "lang_en": "English (Indian)",
+    "lang_mr": "Marathi (मराठी)",
     "close": "Close"
   },
   "actions": {
@@ -36,5 +37,8 @@
     "no_speech_detected": "No speech detected. Please tap the mic and try speaking again.",
     "network_error": "Network error occurred during speech recognition. Please check your connection."
   },
-  "speak_tooltip": "Listen to reply"
+  "speak_tooltip": "Listen to reply",
+  "coming_soon": "Coming Soon",
+  "voice_coming_soon": "Voice input will be available soon.",
+  "thinking": "KisanIQ is thinking..."
 }

@@ -70,5 +70,31 @@
     "field_grade": "Quality Grade",
     "field_description": "Description (Optional)",
     "btn_publish": "Publish Listing"
+  },
+  "select_commodity": "Select Commodity",
+  "sale_quantity": "Sale Quantity (Quintals)",
+  "farmer_location": "Farmer Location: {{location}}",
+  "location_not_set": "Location Not Set",
+  "source_ceda": "Source: CEDA Agmarknet",
+  "rate_date": "Rate Date: {{date}}",
+  "todays_rates": "Today's Rates",
+  "update_pending": "Rate update pending",
+  "empty_mandi_title": "No verified market rate available for this selection",
+  "empty_mandi_desc": "Currently no arrivals or verified rates are available for {{crop}} from CEDA Agmarknet.",
+  "confirm_sale_title": "Confirm Sale to {{market}}",
+  "btn_confirm_sale": "Confirm Sale & Book Vehicle",
+  "est_net_return": "Est. Net Return",
+  "scope_district": "District Market Rates",
+  "scope_state": "Showing verified {{state}} state mandis (district data unavailable)",
+  "scope_national": "Showing verified National mandis (state data unavailable)",
+  "commodities": {
+    "Wheat": "Wheat",
+    "Soybean": "Soybean",
+    "Cotton": "Cotton",
+    "Mustard": "Mustard",
+    "Gram": "Gram / Chana",
+    "Maize": "Maize",
+    "Onion": "Onion",
+    "Paddy": "Paddy / Rice"
   }
 }

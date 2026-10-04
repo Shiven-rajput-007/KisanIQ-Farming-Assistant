@@ -15,6 +15,13 @@ async function runLiveCedaVerification() {
     console.log('CEDA_API_KEY is not configured in the local development environment.');
     console.log('CEDA_API_KEY is configured in the production Render deployment.');
     console.log('To run this test locally, set CEDA_API_KEY in server/.env.');
+    console.log('\n--- CEDA DIAGNOSTIC SUMMARY ---');
+    console.log('CEDA API Key: NO (configured on Render)');
+    console.log('CEDA Auth: BLOCKED');
+    console.log('Commodities: BLOCKED');
+    console.log('Geographies: BLOCKED');
+    console.log('Markets: BLOCKED');
+    console.log('Prices: BLOCKED');
     console.log('============================================================\n');
     return;
   }
@@ -23,6 +30,11 @@ async function runLiveCedaVerification() {
   const baseUrl = mandiService.getBaseUrl();
   console.log(`📡 Connecting to CEDA Agmarknet endpoint: ${baseUrl}`);
 
+  let commoditiesStatus = 'FAIL';
+  let geographiesStatus = 'FAIL';
+  let marketsStatus = 'FAIL';
+  let pricesStatus = 'FAIL';
+
   try {
     // 1. Test GET /agmarknet/commodities
     console.log('\n[1/5] Fetching commodities (GET /agmarknet/commodities)...');
@@ -30,6 +42,7 @@ async function runLiveCedaVerification() {
     console.log(`✅ Received ${commodities.length} commodities from CEDA.`);
     const sampleCommodity = commodities.find(c => c.name.toLowerCase().includes('wheat')) || commodities[0];
     console.log(`   Sample: ID ${sampleCommodity?.id} -> ${sampleCommodity?.name}`);
+    commoditiesStatus = 'PASS';
 
     // 2. Test GET /agmarknet/geographies
     console.log('\n[2/5] Fetching geographies (GET /agmarknet/geographies)...');
@@ -37,6 +50,7 @@ async function runLiveCedaVerification() {
     console.log(`✅ Received ${geographies.length} state geographies from CEDA.`);
     const sampleState = geographies.find(g => g.state_name.toLowerCase().includes('uttar pradesh')) || geographies[0];
     console.log(`   Sample State: ID ${sampleState?.state_id} -> ${sampleState?.state_name} (${sampleState?.districts?.length || 0} districts)`);
+    geographiesStatus = 'PASS';
 
     const sampleDistrict = sampleState?.districts?.[0];
     console.log(`   Sample District: ID ${sampleDistrict?.district_id} -> ${sampleDistrict?.district_name}`);
@@ -50,6 +64,7 @@ async function runLiveCedaVerification() {
       if (markets.length > 0) {
         console.log(`   Sample Market: ID ${markets[0].market_id} -> ${markets[0].market_name}`);
       }
+      marketsStatus = 'PASS';
     }
 
     // 4. Test POST /agmarknet/prices
@@ -63,6 +78,7 @@ async function runLiveCedaVerification() {
       toDate,
     });
     console.log(`✅ Received ${prices.length} price records from CEDA.`);
+    pricesStatus = 'PASS';
 
     // 5. Test Normalization without fake substitutions
     console.log('\n[5/5] Normalizing live CEDA price records...');
@@ -103,11 +119,23 @@ async function runLiveCedaVerification() {
       }
     }
 
-    console.log('\n============================================================');
-    console.log('🎉 ALL LIVE CEDA DIAGNOSTICS PASSED');
+    console.log('\n--- CEDA DIAGNOSTIC SUMMARY ---');
+    console.log('CEDA API Key: YES');
+    console.log('CEDA Auth: PASS');
+    console.log(`Commodities: ${commoditiesStatus}`);
+    console.log(`Geographies: ${geographiesStatus}`);
+    console.log(`Markets: ${marketsStatus}`);
+    console.log(`Prices: ${pricesStatus}`);
     console.log('============================================================\n');
   } catch (err: any) {
     console.error('\n❌ CEDA API Verification Error:', err.message);
+    console.log('\n--- CEDA DIAGNOSTIC SUMMARY ---');
+    console.log('CEDA API Key: YES');
+    console.log('CEDA Auth: FAIL');
+    console.log(`Commodities: ${commoditiesStatus}`);
+    console.log(`Geographies: ${geographiesStatus}`);
+    console.log(`Markets: ${marketsStatus}`);
+    console.log(`Prices: ${pricesStatus}`);
     console.log('============================================================\n');
   }
 }

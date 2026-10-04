@@ -23,5 +23,14 @@
     "uv_index": "UV Index",
     "sunrise": "Sunrise",
     "sunset": "Sunset"
-  }
+  },
+  "location_required_title": "Farm Location Required",
+  "location_required_desc": "Please select your farm location or enable GPS to receive accurate weather and irrigation advice.",
+  "btn_set_location": "Set Farm Location",
+  "btn_change": "Change",
+  "feels_like": "Feels like: {{temp}}°",
+  "btn_refresh": "Refresh",
+  "unavailable_title": "Weather Data Temporarily Unavailable",
+  "unavailable_desc": "Unable to reach weather services at the moment. Please try again.",
+  "farmer_location": "Farmer Location: {{location}}"
 }

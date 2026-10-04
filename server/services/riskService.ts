@@ -82,13 +82,75 @@ export class RiskService {
     }
     const cropHealthLevel = cropHealthScore > 60 ? 'high' : cropHealthScore > 30 ? 'medium' : 'low';
 
-    // 3. Market risk score (0-100)
-    const marketScore = 14;
-    const marketLevel = 'low';
+    // 3. Market risk score (computed from commodity price volatility)
+    let marketScore = 20;
+    try {
+      let cropToAssess = 'Wheat';
+      if (farmerId && farmerId !== 'guest_user') {
+        const cropRes = await db.query('SELECT name FROM crops WHERE farmer_id = $1 LIMIT 1', [farmerId]);
+        if (cropRes.rows.length > 0 && cropRes.rows[0].name) {
+          cropToAssess = cropRes.rows[0].name;
+        }
+      }
+      const priceStats = await db.query(
+        `SELECT min_price, max_price, modal_price FROM market_prices 
+         WHERE commodity ILIKE $1 
+         ORDER BY price_date DESC LIMIT 5`,
+        [`%${cropToAssess}%`]
+      );
+      if (priceStats.rows.length > 0) {
+        const spreads = priceStats.rows.map((r: any) => {
+          const min = Number(r.min_price);
+          const max = Number(r.max_price);
+          const modal = Number(r.modal_price || min);
+          return modal > 0 ? ((max - min) / modal) * 100 : 0;
+        });
+        const avgSpread = spreads.reduce((a: number, b: number) => a + b, 0) / spreads.length;
+        if (avgSpread > 25) {
+          marketScore = 55; // high price volatility
+        } else if (avgSpread > 15) {
+          marketScore = 35; // moderate fluctuation
+        } else {
+          marketScore = 18; // stable market prices
+        }
+      }
+    } catch (mErr) {
+      console.warn('[RiskService] Market risk calc notice:', mErr);
+    }
+    const marketLevel = marketScore > 60 ? 'high' : marketScore > 30 ? 'medium' : 'low';
 
-    // 4. Water risk score (0-100)
-    const waterScore = 12;
-    const waterLevel = 'low';
+    // 4. Water risk score (computed from farmer irrigation type and rainfall deficit)
+    let waterScore = 18;
+    try {
+      let irrigationSource = 'borewell';
+      if (farmerId && farmerId !== 'guest_user') {
+        const farmRes = await db.query('SELECT irrigation_source FROM farms WHERE farmer_id = $1 LIMIT 1', [farmerId]);
+        if (farmRes.rows.length > 0 && farmRes.rows[0].irrigation_source) {
+          irrigationSource = String(farmRes.rows[0].irrigation_source).toLowerCase();
+        }
+      }
+      const maxForecastRain = Math.max(
+        ...(forecast || []).map((f) => f.rainProbability ?? 0),
+        current.rainProbability ?? 0
+      );
+      if (irrigationSource.includes('rainfed')) {
+        if (maxForecastRain < 20) {
+          waterScore = 65; // High drought risk for rainfed crops with no rain
+        } else if (maxForecastRain < 50) {
+          waterScore = 40;
+        } else {
+          waterScore = 20;
+        }
+      } else if (irrigationSource.includes('drip') || irrigationSource.includes('sprinkler')) {
+        waterScore = 15; // highly efficient irrigation
+      } else {
+        // Canal or borewell
+        waterScore = 22;
+      }
+    } catch (wErr) {
+      console.warn('[RiskService] Water risk calc notice:', wErr);
+    }
+    const waterLevel = waterScore > 60 ? 'high' : waterScore > 30 ? 'medium' : 'low';
 
     // Overall weighted score
     const overallScore = Math.round(

@@ -107,7 +107,7 @@ export default function SoilTestingPage() {
         trackingNotes,
       });
 
-      setFormSuccess('माती परीक्षण विनंती यशस्वीरित्या नोंदवली गेली!');
+      setFormSuccess(t('form.success_title'));
       setTrackingNotes('');
       // Reload requests
       const updatedReqs = await soilApi.getRequests(farmerId);
@@ -118,7 +118,7 @@ export default function SoilTestingPage() {
         setActiveTab('tracking');
       }, 1200);
     } catch (err: any) {
-      alert(`त्रुटी: ${err.message}`);
+      alert(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -138,7 +138,7 @@ export default function SoilTestingPage() {
     const nextStatus = sequence[(currentIndex + 1) % sequence.length];
 
     try {
-      await soilApi.updateStatus(reqId, nextStatus, `स्थिती बदलली: ${nextStatus}`);
+      await soilApi.updateStatus(reqId, nextStatus, `Status updated: ${nextStatus}`);
       const updatedReqs = await soilApi.getRequests(farmerId);
       setRequests(updatedReqs.requests);
     } catch (err) {
@@ -910,13 +910,13 @@ export default function SoilTestingPage() {
 
               <div className="grid grid-cols-2 gap-2 text-xs border-b border-sand-200 pb-3">
                 <div>
-                  <p><strong>Farmer Name:</strong> Ramesh Patil</p>
-                  <p><strong>Village / District:</strong> Pune, Maharashtra</p>
-                  <p><strong>Crop Calibrated:</strong> Wheat (HD-2967)</p>
+                  <p><strong>Farmer Name:</strong> {farmer?.name || 'Farmer'}</p>
+                  <p><strong>Village / District:</strong> {farmer?.location?.district ? `${farmer.location.district}, ${farmer.location.state}` : 'Registered Field'}</p>
+                  <p><strong>Crop Calibrated:</strong> {report?.cropName || selectedCrop || 'Crop'}</p>
                 </div>
                 <div className="text-right">
-                  <p><strong>Sample ID:</strong> SMP-2024-001</p>
-                  <p><strong>Date of Testing:</strong> 2024-02-15</p>
+                  <p><strong>Sample ID:</strong> {report?.id || 'SMP-VERIFIED'}</p>
+                  <p><strong>Date of Testing:</strong> {report?.testDate || new Date().toISOString().split('T')[0]}</p>
                   <p><strong>Report Status:</strong> VERIFIED & SEALED</p>
                 </div>
               </div>
@@ -934,39 +934,39 @@ export default function SoilTestingPage() {
                 <tbody className="divide-y divide-sand-200">
                   <tr>
                     <td className="p-2">Soil pH (1:2.5)</td>
-                    <td className="p-2 text-center font-bold">6.5</td>
+                    <td className="p-2 text-center font-bold">{report?.ph ?? 6.5}</td>
                     <td className="p-2 text-center">-</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">Optimal (सामान्य)</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.ph ? (report.ph < 6 ? 'Low' : report.ph > 7.5 ? 'High' : 'Optimal') : 'Optimal'}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Electrical Conductivity (EC)</td>
-                    <td className="p-2 text-center font-bold">0.42</td>
+                    <td className="p-2 text-center font-bold">{report?.ec ?? 0.42}</td>
                     <td className="p-2 text-center">dS/m</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">Normal (क्षारतामुक्त)</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.ec ? (report.ec > 1.0 ? 'High' : 'Normal') : 'Normal'}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Organic Carbon (OC)</td>
-                    <td className="p-2 text-center font-bold">0.45</td>
+                    <td className="p-2 text-center font-bold">{report?.organicCarbon ?? 0.45}</td>
                     <td className="p-2 text-center">%</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">Medium (मध्यम)</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.organicCarbon ? (report.organicCarbon < 0.5 ? 'Low' : report.organicCarbon > 0.75 ? 'High' : 'Medium') : 'Medium'}</td>
                   </tr>
                   <tr className="bg-amber-50">
                     <td className="p-2 font-bold text-amber-900">Available Nitrogen (N)</td>
-                    <td className="p-2 text-center font-bold text-amber-900">260</td>
+                    <td className="p-2 text-center font-bold text-amber-900">{report?.nitrogenKgHa ?? 260}</td>
                     <td className="p-2 text-center">kg/ha</td>
-                    <td className="p-2 text-right text-amber-700 font-bold">Low (कमी)</td>
+                    <td className="p-2 text-right text-amber-700 font-bold">{report?.nitrogenKgHa ? (report.nitrogenKgHa < 280 ? 'Low' : report.nitrogenKgHa > 560 ? 'High' : 'Optimal') : 'Low'}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Available Phosphorus (P)</td>
-                    <td className="p-2 text-center font-bold">18.5</td>
+                    <td className="p-2 text-center font-bold">{report?.phosphorusKgHa ?? 18.5}</td>
                     <td className="p-2 text-center">kg/ha</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">Optimal (योग्य)</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.phosphorusKgHa ? (report.phosphorusKgHa < 10 ? 'Low' : report.phosphorusKgHa > 25 ? 'High' : 'Optimal') : 'Optimal'}</td>
                   </tr>
                   <tr>
                     <td className="p-2">Available Potassium (K)</td>
-                    <td className="p-2 text-center font-bold">210</td>
+                    <td className="p-2 text-center font-bold">{report?.potassiumKgHa ?? 210}</td>
                     <td className="p-2 text-center">kg/ha</td>
-                    <td className="p-2 text-right text-emerald-700 font-semibold">Optimal (योग्य)</td>
+                    <td className="p-2 text-right text-emerald-700 font-semibold">{report?.potassiumKgHa ? (report.potassiumKgHa < 120 ? 'Low' : report.potassiumKgHa > 280 ? 'High' : 'Optimal') : 'Optimal'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -980,18 +980,18 @@ export default function SoilTestingPage() {
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => {
-                  alert('अधिकृत PDF यशस्वीरित्या डाउनलोड झाली!');
+                  window.print();
                   setShowPdfModal(false);
                 }}
                 className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow"
               >
-                <Download className="h-3.5 w-3.5" /> डाउनलोड करा (PDF)
+                <Download className="h-3.5 w-3.5" /> {t('common:buttons.save')} (PDF)
               </button>
               <button
                 onClick={() => setShowPdfModal(false)}
                 className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-sand-700 text-xs font-medium rounded-xl"
               >
-                बंद करा
+                {t('common:buttons.cancel')}
               </button>
             </div>
           </div>

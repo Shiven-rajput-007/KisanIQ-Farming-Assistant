@@ -19,8 +19,8 @@ export interface AssistantResponse {
 
 export class AssistantService {
   async processQuery(
-    farmerId: string = 'farmer_ramesh',
-    userQuery: string,
+    farmerId?: string,
+    userQuery: string = '',
     contextInfo?: {
       activeLocation?: { district?: string; state?: string; latitude?: number; longitude?: number };
       role?: string;
@@ -31,24 +31,32 @@ export class AssistantService {
     const nluResult: NLUResult = nluEngine.analyze(userQuery, sessionId);
     const { intent, entities, detectedLanguage, followUpQuestion } = nluResult;
 
-    // Marathi-First language resolution:
-    // If detected as Marathi, or context language is 'mr', or no explicit language specified and not English/Hindi
-    const isMarathi =
-      detectedLanguage === 'mr' ||
-      detectedLanguage === 'marathi_mixed' ||
-      contextInfo?.language === 'mr' ||
-      (!contextInfo?.language && detectedLanguage !== 'en' && detectedLanguage !== 'hi' && detectedLanguage !== 'hinglish');
+    // Language resolution: Context language takes priority, then detected language; Hindi is primary default
+    let resolvedLang = 'hi';
+    if (contextInfo?.language === 'mr') {
+      resolvedLang = 'mr';
+    } else if (contextInfo?.language === 'en') {
+      resolvedLang = 'en';
+    } else if (contextInfo?.language === 'hi') {
+      resolvedLang = 'hi';
+    } else if (detectedLanguage === 'mr' || detectedLanguage === 'marathi_mixed') {
+      resolvedLang = 'mr';
+    } else if (detectedLanguage === 'en') {
+      resolvedLang = 'en';
+    } else {
+      resolvedLang = 'hi';
+    }
 
-    const isHindi =
-      !isMarathi &&
-      (detectedLanguage === 'hi' || detectedLanguage === 'hinglish' || contextInfo?.language === 'hi');
+    const isMarathi = resolvedLang === 'mr';
+    const isEnglish = resolvedLang === 'en';
+    const isHindi = resolvedLang === 'hi';
 
     // 1. Fetch user/farmer crop & location context from DB if exists
-    let farmerCrop: any = { name: 'गहू', variety: 'HD-2967', current_stage: 'vegetative', days_old: 60 };
-    let userLat = contextInfo?.activeLocation?.latitude || 18.5204;
-    let userLon = contextInfo?.activeLocation?.longitude || 73.8567;
-    let userDistrict = contextInfo?.activeLocation?.district || (isMarathi ? 'पुणे' : 'Pune');
-    let userState = contextInfo?.activeLocation?.state || 'Maharashtra';
+    let farmerCrop: any = null;
+    let userLat = contextInfo?.activeLocation?.latitude || null;
+    let userLon = contextInfo?.activeLocation?.longitude || null;
+    let userDistrict = contextInfo?.activeLocation?.district || (isMarathi ? 'पुणे' : 'इंदौर');
+    let userState = contextInfo?.activeLocation?.state || (isMarathi ? 'महाराष्ट्र' : 'मध्य प्रदेश');
 
     if (farmerId && farmerId !== 'guest_user') {
       try {
@@ -74,7 +82,7 @@ export class AssistantService {
     const targetLon = entities.coordinates?.lon || userLon;
     const targetDistrict = entities.location || userDistrict;
     const targetState = entities.state || userState;
-    const selectedCrop = entities.crop || farmerCrop.name || (isMarathi ? 'गहू' : 'Wheat');
+    const selectedCrop = entities.crop || farmerCrop?.name || (isMarathi ? 'गहू' : isHindi ? 'गेहूं' : 'Wheat');
 
     let reply = '';
     let action: AssistantResponse['action'] = undefined;
@@ -211,48 +219,76 @@ export class AssistantService {
       }
 
       case 'WEATHER': {
-        const weather = await weatherService.getWeather(targetLat, targetLon);
-        const { current, forecast } = weather;
-        const tomorrow = forecast[1] || forecast[0] || { rainProbability: 10, high: 32, low: 18, conditions: 'Partly Cloudy' };
+        if (!targetLat || !targetLon) {
+          reply = isMarathi
+            ? `कृपया अचूक हवामान पाहण्यासाठी तुमचे सक्रिय स्थान किंवा जिल्हा निवडा.`
+            : isHindi
+            ? `कृपया सटीक मौसम देखने के लिए अपना सक्रिय स्थान या जिला चुनें।`
+            : `Please set your active location or district to view verified local weather.`;
+          break;
+        }
 
-        if (entities.timeframe === 'tomorrow') {
-          if ((tomorrow.rainProbability ?? 0) >= 40) {
-            if (isMarathi) {
-              reply = `उद्या ${targetDistrict} मध्ये पावसाची **${tomorrow.rainProbability ?? 0}% शक्यता** आहे (कमाल: ${tomorrow.high ?? 32}°C, किमान: ${tomorrow.low ?? 20}°C). हवामान पाहता उद्या पिकाला पाणी देणे टाळा आणि शेतातून पाण्याचा योग्य निचरा ठेवा.`;
-            } else if (isHindi) {
-              reply = `कल ${targetDistrict} में बारिश की **${tomorrow.rainProbability ?? 0}% संभावना** है (तापमान ${tomorrow.high ?? 32}°C / ${tomorrow.low ?? 20}°C)। मौसम को देखते हुए कल तक सिंचाई टालें और जल निकासी दुरुस्त रखें।`;
+        try {
+          const weather = await weatherService.getWeather(targetLat, targetLon);
+          const { current, forecast } = weather;
+          const tomorrow = forecast && forecast.length > 1 ? forecast[1] : (forecast && forecast.length > 0 ? forecast[0] : null);
+
+          if (entities.timeframe === 'tomorrow') {
+            if (tomorrow) {
+              if ((tomorrow.rainProbability ?? 0) >= 40) {
+                if (isMarathi) {
+                  reply = `उद्या ${targetDistrict} मध्ये पावसाची **${tomorrow.rainProbability ?? 0}% शक्यता** आहे (कमाल: ${tomorrow.high ?? '--'}°C, किमान: ${tomorrow.low ?? '--'}°C). हवामान पाहता उद्या पिकाला पाणी देणे टाळा आणि शेतातून पाण्याचा योग्य निचरा ठेवा.`;
+                } else if (isHindi) {
+                  reply = `कल ${targetDistrict} में बारिश की **${tomorrow.rainProbability ?? 0}% संभावना** है (तापमान ${tomorrow.high ?? '--'}°C / ${tomorrow.low ?? '--'}°C)। मौसम को देखते हुए कल तक सिंचाई टालें और जल निकासी दुरुस्त रखें।`;
+                } else {
+                  reply = `Tomorrow in ${targetDistrict}, there is a **${tomorrow.rainProbability ?? 0}% chance of rain** (High: ${tomorrow.high ?? '--'}°C, Low: ${tomorrow.low ?? '--'}°C). We recommend postponing irrigation and ensuring field drainage.`;
+                }
+              } else {
+                if (isMarathi) {
+                  reply = `उद्या ${targetDistrict} मध्ये हवामान प्रामुख्याने स्वच्छ राहील. पावसाची शक्यता केवळ **${tomorrow.rainProbability ?? 0}%** आहे. कमाल तापमान ${tomorrow.high ?? '--'}°C आणि किमान ${tomorrow.low ?? '--'}°C राहण्याचा अंदाज आहे.`;
+                } else if (isHindi) {
+                  reply = `कल ${targetDistrict} में मौसम मुख्य रूप से साफ रहेगा। बारिश की संभावना केवल **${tomorrow.rainProbability ?? 0}%** है। अधिकतम तापमान ${tomorrow.high ?? '--'}°C और न्यूनतम ${tomorrow.low ?? '--'}°C रहेगा।`;
+                } else {
+                  reply = `Tomorrow in ${targetDistrict}, the weather will be mostly clear with only **${tomorrow.rainProbability ?? 0}% chance of rain**. High will be around ${tomorrow.high ?? '--'}°C and low around ${tomorrow.low ?? '--'}°C.`;
+                }
+              }
             } else {
-              reply = `Tomorrow in ${targetDistrict}, there is a **${tomorrow.rainProbability ?? 0}% chance of rain** (High: ${tomorrow.high ?? 32}°C, Low: ${tomorrow.low ?? 20}°C). We recommend postponing irrigation and ensuring field drainage.`;
+              reply = isMarathi
+                ? `उद्याचा हवामान अंदाज सध्या उपलब्ध नाही.`
+                : isHindi
+                ? `कल का मौसम पूर्वानुमान अभी उपलब्ध नहीं है।`
+                : `Tomorrow's forecast is currently unavailable.`;
+            }
+          } else if (entities.timeframe === 'forecast') {
+            const daysText = forecast && forecast.length > 0
+              ? forecast
+                  .slice(0, 3)
+                  .map((f: any) => `${f.dayName || f.date}: ${f.high ?? '--'}°C / ${f.low ?? '--'}°C (${f.rainProbability ?? 0}% बारिश/rain)`)
+                  .join(' | ')
+              : '';
+            if (isMarathi) {
+              reply = `${targetDistrict} साठी पुढील 3 दिवसांचा अंदाज: ${daysText}। सध्याचे तापमान **${current.temperature ?? '--'}°C** असून आर्द्रता **${current.humidity ?? '--'}%** आहे.`;
+            } else if (isHindi) {
+              reply = `${targetDistrict} के लिए अगले 3 दिनों का पूर्वानुमान: ${daysText}। वर्तमान तापमान ${current.temperature ?? '--'}°C और नमी ${current.humidity ?? '--'}% है।`;
+            } else {
+              reply = `Next 3-day forecast for ${targetDistrict}: ${daysText}. Current temperature is ${current.temperature ?? '--'}°C with ${current.humidity ?? '--'}% humidity.`;
             }
           } else {
+            const tomProb = tomorrow ? `${tomorrow.rainProbability ?? 0}%` : 'उपलब्ध नाही';
             if (isMarathi) {
-              reply = `उद्या ${targetDistrict} मध्ये हवामान प्रामुख्याने स्वच्छ राहील. पावसाची शक्यता केवळ **${tomorrow.rainProbability ?? 0}%** आहे. कमाल तापमान ${tomorrow.high ?? 32}°C आणि किमान ${tomorrow.low ?? 20}°C राहण्याचा अंदाज आहे.`;
+              reply = `${targetDistrict} मध्ये आजचे तापमान **${current.temperature ?? '--'}°C** आहे (हवेतील आर्द्रता: ${current.humidity ?? '--'}%, वाऱ्याचा वेग: ${current.windSpeed ?? '--'} km/h). स्थिती: ${current.condition}। उद्या पावसाची शक्यता **${tomProb}** आहे.`;
             } else if (isHindi) {
-              reply = `कल ${targetDistrict} में मौसम मुख्य रूप से साफ रहेगा। बारिश की संभावना केवल **${tomorrow.rainProbability ?? 0}%** है। अधिकतम तापमान ${tomorrow.high ?? 32}°C और न्यूनतम ${tomorrow.low ?? 20}°C रहेगा।`;
+              reply = `${targetDistrict} में आज का तापमान **${current.temperature ?? '--'}°C** है (नमी: ${current.humidity ?? '--'}%, हवा: ${current.windSpeed ?? '--'} km/h)। स्थिति: ${current.condition}। कल बारिश की संभावना ${tomProb} है।`;
             } else {
-              reply = `Tomorrow in ${targetDistrict}, the weather will be mostly clear with only **${tomorrow.rainProbability ?? 0}% chance of rain**. High will be around ${tomorrow.high ?? 32}°C and low around ${tomorrow.low ?? 20}°C.`;
+              reply = `Today in ${targetDistrict}, the temperature is **${current.temperature ?? '--'}°C** with **${current.humidity ?? '--'}% humidity** and wind speed of ${current.windSpeed ?? '--'} km/h. Conditions: ${current.condition}. Tomorrow's rain probability is ${tomProb}.`;
             }
           }
-        } else if (entities.timeframe === 'forecast') {
-          const daysText = forecast
-            .slice(0, 3)
-            .map((f: any) => `${f.day}: ${f.high}°C / ${f.low}°C (${f.rainProbability}% पाऊस/rain)`)
-            .join(' | ');
-          if (isMarathi) {
-            reply = `${targetDistrict} साठी पुढील 3 दिवसांचा अंदाज: ${daysText}। सध्याचे तापमान **${current.temperature}°C** असून आर्द्रता **${current.humidity}%** आहे.`;
-          } else if (isHindi) {
-            reply = `${targetDistrict} के लिए अगले 3 दिनों का पूर्वानुमान: ${daysText}। वर्तमान तापमान ${current.temperature}°C और नमी ${current.humidity}% है।`;
-          } else {
-            reply = `Next 3-day forecast for ${targetDistrict}: ${daysText}. Current temperature is ${current.temperature}°C with ${current.humidity}% humidity.`;
-          }
-        } else {
-          if (isMarathi) {
-            reply = `${targetDistrict} मध्ये आजचे तापमान **${current.temperature}°C** आहे (हवेतील आर्द्रता: ${current.humidity}%, वाऱ्याचा वेग: ${current.windSpeed} km/h). स्थिती: ${current.condition}। उद्या पावसाची शक्यता **${tomorrow.rainProbability}%** आहे.`;
-          } else if (isHindi) {
-            reply = `${targetDistrict} में आज का तापमान **${current.temperature}°C** है (नमी: ${current.humidity}%, हवा: ${current.windSpeed} km/h)। स्थिति: ${current.condition}। कल बारिश की संभावना ${tomorrow.rainProbability}% है।`;
-          } else {
-            reply = `Today in ${targetDistrict}, the temperature is **${current.temperature}°C** with **${current.humidity}% humidity** and wind speed of ${current.windSpeed} km/h. Conditions: ${current.condition}. Tomorrow's rain probability is ${tomorrow.rainProbability}%.`;
-          }
+        } catch (weatherErr) {
+          reply = isMarathi
+            ? `${targetDistrict} परिसरासाठी थेट हवामान माहिती सध्या उपलब्ध नाही. कृपया थोड्या वेळाने प्रयत्न करा.`
+            : isHindi
+            ? `${targetDistrict} क्षेत्र के लिए लाइव मौसम डेटा वर्तमान में अनुपलब्ध है। कृपया थोड़ी देर बाद पुनः प्रयास करें।`
+            : `Live weather data for ${targetDistrict} is currently unavailable. Please try again shortly.`;
         }
         break;
       }
@@ -312,12 +348,12 @@ export class AssistantService {
           farmerId,
           selectedCrop,
           100,
-          targetLat,
-          targetLon,
+          targetLat || undefined,
+          targetLon || undefined,
           targetDistrict,
           targetState
         );
-        const top = comp.markets[0];
+        const top = comp.markets && comp.markets.length > 0 ? comp.markets[0] : null;
         if (top) {
           if (isMarathi) {
             reply = `${top.name} (${top.district || targetDistrict}) येथे **${selectedCrop}** चा सध्याचा बाजारभाव **₹${top.price.toLocaleString('en-IN')}/क्विंटल** आहे (अंतर: ${top.distance} किमी, वाहतूक खर्च: ₹${top.transportCost}). अंदाजे निव्वळ परतावा ₹${top.netReturn.toLocaleString('en-IN')} आहे. (स्रोत: ${top.source})`;
@@ -341,64 +377,117 @@ export class AssistantService {
           farmerId,
           selectedCrop,
           100,
-          targetLat,
-          targetLon,
+          targetLat || undefined,
+          targetLon || undefined,
           targetDistrict,
           targetState
         );
-        const top = comp.markets[0];
-        if (isMarathi) {
-          reply = `किसानIQ विश्लेषण: आज तुमच्यासाठी सर्वात योग्य पर्याय **${top.name}** आहे (दर: ₹${top.price}/क्विंटल, निव्वळ नफा: ₹${top.netReturn.toLocaleString('en-IN')}). निर्णय इंजिनचा सल्ला: 60% माल आता विकावा आणि 40% पुढील दरवाढीच्या प्रतीक्षेत ठेवावा.`;
-        } else if (isHindi) {
-          reply = `किसानIQ विश्लेषण: आज सबसे बेहतर व्यावहारिक विकल्प **${top.name}** है (भाव: ₹${top.price}/q, शुद्ध लाभ: ₹${top.netReturn.toLocaleString('en-IN')})। किसानIQ सुझाव देता है कि 60% मात्रा अभी बेचें और 40% भाव उछाल की प्रतीक्षा में रोकें।`;
+        const top = comp.markets && comp.markets.length > 0 ? comp.markets[0] : null;
+        if (top) {
+          if (isMarathi) {
+            reply = `किसानIQ विश्लेषण: आज तुमच्यासाठी सर्वात योग्य पर्याय **${top.name}** आहे (दर: ₹${top.price}/क्विंटल, निव्वळ नफा: ₹${top.netReturn.toLocaleString('en-IN')}). निर्णय इंजिनचा सल्ला: 60% माल आता विकावा आणि 40% पुढील दरवाढीच्या प्रतीक्षेत ठेवावा.`;
+          } else if (isHindi) {
+            reply = `किसानIQ विश्लेषण: आज सबसे बेहतर व्यावहारिक विकल्प **${top.name}** है (भाव: ₹${top.price}/q, शुद्ध लाभ: ₹${top.netReturn.toLocaleString('en-IN')})। किसानIQ सुझाव देता है कि 60% मात्रा अभी बेचें और 40% भाव उछाल की प्रतीक्षा में रोकें।`;
+          } else {
+            reply = `KisanIQ Recommendation: The best practical option today is **${top.name}** (Price: ₹${top.price}/q, Net Realization: ₹${top.netReturn.toLocaleString('en-IN')}). Our decision engine advises selling 60% now and holding 40% to balance market risk.`;
+          }
         } else {
-          reply = `KisanIQ Recommendation: The best practical option today is **${top.name}** (Price: ₹${top.price}/q, Net Realization: ₹${top.netReturn.toLocaleString('en-IN')}). Our decision engine advises selling 60% now and holding 40% to balance market risk.`;
+          reply = isMarathi
+            ? `माफ करा, ${targetDistrict} परिसरासाठी ${selectedCrop} चे थेट बाजारभाव सध्या उपलब्ध नाहीत.`
+            : isHindi
+            ? `क्षमा करें, ${targetDistrict} क्षेत्र के लिए ${selectedCrop} के सत्यापित मंडी भाव अभी उपलब्ध नहीं हैं।`
+            : `Currently, verified mandi rates for ${selectedCrop} around ${targetDistrict} are unavailable.`;
         }
         break;
       }
 
       case 'IRRIGATION_ADVICE': {
-        const weather = await weatherService.getWeather(targetLat, targetLon);
-        const tomorrow = weather.forecast[1] || weather.forecast[0];
-        if (tomorrow && (tomorrow.rainProbability ?? 0) >= 40) {
-          if (isMarathi) {
-            reply = `आज शेतात पाणी देऊ नका. उद्या ${targetDistrict} मध्ये **${tomorrow.rainProbability ?? 0}% पावसाची शक्यता** आहे. ${farmerCrop.name} पिकाच्या सध्याच्या ${farmerCrop.current_stage} अवस्थेत अतिरिक्त पाण्याने मुळे कुजण्याचा धोका संभवतो.`;
-          } else if (isHindi) {
-            reply = `आज फसल में पानी न दें। कल ${targetDistrict} में **${tomorrow.rainProbability ?? 0}% बारिश** की संभावना है। फसल (${farmerCrop.name}) की वर्तमान ${farmerCrop.current_stage} अवस्था में अधिक पानी से जड़ सड़न हो सकती है।`;
+        const cropDisplay = farmerCrop?.name || selectedCrop;
+        const stageDisplay = farmerCrop?.current_stage || (isMarathi ? 'सध्याच्या' : isHindi ? 'वर्तमान' : 'growing');
+
+        if (!targetLat || !targetLon) {
+          reply = isMarathi
+            ? `सिंचन सल्ला मिळवण्यासाठी कृपया आपले स्थान किंवा जिल्हा निश्चित करा.`
+            : isHindi
+            ? `सिंचाई सलाह के लिए कृपया अपना सक्रिय स्थान या जिला सेट करें।`
+            : `Please set your active location to receive irrigation advice.`;
+          break;
+        }
+
+        try {
+          const weather = await weatherService.getWeather(targetLat, targetLon);
+          const tomorrow = weather.forecast && weather.forecast.length > 1 ? weather.forecast[1] : (weather.forecast && weather.forecast.length > 0 ? weather.forecast[0] : null);
+          if (tomorrow && (tomorrow.rainProbability ?? 0) >= 40) {
+            if (isMarathi) {
+              reply = `आज शेतात पाणी देऊ नका. उद्या ${targetDistrict} मध्ये **${tomorrow.rainProbability ?? 0}% पावसाची शक्यता** आहे. ${cropDisplay} पिकाच्या ${stageDisplay} अवस्थेत अतिरिक्त पाण्याने मुळे कुजण्याचा धोका संभवतो.`;
+            } else if (isHindi) {
+              reply = `आज फसल में पानी न दें। कल ${targetDistrict} में **${tomorrow.rainProbability ?? 0}% बारिश** की संभावना है। ${cropDisplay} की ${stageDisplay} अवस्था में अतिरिक्त पानी से जड़ सड़न का खतरा हो सकता है।`;
+            } else {
+              reply = `Do not irrigate today. Rain probability tomorrow in ${targetDistrict} is **${tomorrow.rainProbability ?? 0}%**. Over-watering during the ${stageDisplay} stage of ${cropDisplay} can risk root disease.`;
+            }
           } else {
-            reply = `Do not irrigate today. Rain probability tomorrow in ${targetDistrict} is **${tomorrow.rainProbability ?? 0}%**. Over-watering during the ${farmerCrop.current_stage} stage of ${farmerCrop.name} can risk root disease.`;
+            if (isMarathi) {
+              reply = `पुढील २ दिवसांत पावसाची शक्यता कमी आहे. जर जमिनीचा वरचा २ इंचाचा थर कोरडा असेल, तर सकाळच्या किंवा संध्याकाळच्या वेळी हलके सिंचन करावे.`;
+            } else if (isHindi) {
+              reply = `अगले 2 दिनों में बारिश की संभावना कम है। यदि मिट्टी की ऊपरी सतह 2 इंच तक सूखी है, तो शाम के समय हल्की सिंचाई करें।`;
+            } else {
+              reply = `Rain probability is low for the next 2 days. If topsoil moisture is below 2 inches, proceed with light irrigation during morning or evening hours.`;
+            }
           }
-        } else {
-          if (isMarathi) {
-            reply = `पुढील २ दिवसांत पावसाची शक्यता कमी आहे. जर जमिनीचा वरचा २ इंचाचा थर कोरडा असेल, तर सकाळच्या किंवा संध्याकाळच्या वेळी हलके सिंचन करावे.`;
-          } else if (isHindi) {
-            reply = `अगले 2 दिनों में बारिश की संभावना कम है। यदि मिट्टी की ऊपरी सतह 2 इंच तक सूखी है, तो शाम के समय हल्की सिंचाई करें।`;
-          } else {
-            reply = `Rain probability is low for the next 2 days. If topsoil moisture is below 2 inches, proceed with light irrigation during morning or evening hours.`;
-          }
+        } catch (irrErr) {
+          reply = isMarathi
+            ? `हवामान डेटा उपलब्ध नसल्याने सिंचन सल्ला तयार करता आला नाही. जमिनीचा ओलावा तपासून निर्णय घ्या.`
+            : isHindi
+            ? `मौसम डेटा अनुपलब्ध होने के कारण सिंचाई परामर्श तैयार नहीं हो सका। कृपया खेत की नमी देखकर निर्णय लें।`
+            : `Unable to retrieve weather forecast for irrigation advisory. Please check soil moisture directly before watering.`;
         }
         break;
       }
 
       case 'DISEASE_PEST': {
-        const weather = await weatherService.getWeather(targetLat, targetLon);
+        let humidityText = '';
+        if (targetLat && targetLon) {
+          try {
+            const weather = await weatherService.getWeather(targetLat, targetLon);
+            if (weather.current.humidity !== null && weather.current.humidity !== undefined) {
+              humidityText = ` (${weather.current.humidity}%)`;
+            }
+          } catch {
+            // Weather service error, proceed with general agronomic advice
+          }
+        }
+
         if (isMarathi) {
-          reply = `सध्याच्या हवेतील आर्द्रतेमुळे (${weather.current.humidity}%) **${selectedCrop}** पिकावर बुरशी किंवा कीड (उदा. मावा, तांबेरा) येण्याचा धोका वाढू शकतो. पानांवर पिवळे डाग दिसल्यास त्वरित शिफारशीत बुरशीनाशकाची (Propiconazole 25% EC - 1 मिली/लीटर पाणी) फवारणी करा.`;
+          reply = `सध्याच्या हवेतील आर्द्रतेमुळे${humidityText} **${selectedCrop}** पिकावर बुरशी किंवा कीड (उदा. मावा, तांबेरा) येण्याचा धोका वाढू शकतो. पानांवर पिवळे डाग दिसल्यास त्वरित शिफारशीत बुरशीनाशकाची (Propiconazole 25% EC - 1 मिली/लीटर पाणी) फवारणी करा.`;
         } else if (isHindi) {
-          reply = `वर्तमान नमी (${weather.current.humidity}%) में **${selectedCrop}** में फफूंद या कीट (जैसे पीला रतुआ या माहू) का खतरा बढ़ सकता है। पत्तों के नीचे पीले पाउडर या धब्बे दिखें तो प्रोपिकोनाजोल (Propiconazole 25% EC) 1ml/लीटर पानी की दर से छिड़काव करें।`;
+          reply = `वर्तमान नमी स्तर${humidityText} में **${selectedCrop}** में फफूंद या कीट (जैसे पीला रतुआ या माहू) का खतरा बढ़ सकता है। पत्तों के नीचे पीले पाउडर या धब्बे दिखें तो प्रोपिकोनाजोल (Propiconazole 25% EC) 1ml/लीटर पानी की दर से छिड़काव करें।`;
         } else {
-          reply = `At current humidity levels (${weather.current.humidity}%), **${selectedCrop}** may be susceptible to fungal or rust symptoms (e.g. Yellow Rust / Aphids). Inspect leaf undersides; if spotted, spray Propiconazole 25% EC at 1 ml per liter of water.`;
+          reply = `At current humidity levels${humidityText}, **${selectedCrop}** may be susceptible to fungal or rust symptoms (e.g. Yellow Rust / Aphids). Inspect leaf undersides; if spotted, spray Propiconazole 25% EC at 1 ml per liter of water.`;
         }
         break;
       }
 
       case 'CROP_RECOMMENDATION': {
-        if (isMarathi) {
-          reply = `तुमचे ${farmerCrop.name} पीक (${farmerCrop.variety || 'प्रमाणित वाण'}) सध्या ${farmerCrop.days_old || 60} दिवसांचे असून ${farmerCrop.current_stage} अवस्थेत आहे. हवामान अनुकूल आहे. वेळेवर तण काढणी आणि नत्र खताचा संतुलित वापर ठेवा.`;
-        } else if (isHindi) {
-          reply = `आपकी ${farmerCrop.name} फसल (${farmerCrop.variety || 'Certified'}) ${farmerCrop.days_old || 60} दिन पुरानी है और ${farmerCrop.current_stage} चरण में है। मौसम अनुकूल है। समय पर निराई-गुड़ाई करें और यूरिया की दूसरी खुराक सिंचाई के साथ दें।`;
+        if (!farmerCrop) {
+          if (isMarathi) {
+            reply = `तुमच्या खात्यावर अद्याप कोणतेही पीक नोंदवलेले नाही. कृपया 'माझे पीक' विभागात जाऊन चालू पीक जोडा, जेणेकरून अचूक पीक सल्ला देता येईल.`;
+          } else if (isHindi) {
+            reply = `आपके खाते पर अभी कोई फसल पंजीकृत नहीं है। कृपया 'मेरी फसल' अनुभाग में जाकर अपनी सक्रिय फसल जोड़ें ताकि व्यक्तिगत कृषि सलाह मिल सके।`;
+          } else {
+            reply = `You have not registered any crop yet. Please register your active crop in the 'My Crop' section to receive personalized agronomic guidance.`;
+          }
         } else {
-          reply = `Your ${farmerCrop.name} crop (${farmerCrop.variety || 'Certified'}) is currently ${farmerCrop.days_old || 60} days old in ${farmerCrop.current_stage} stage. Weather conditions are supportive. Ensure balanced nitrogen application and timely weed management.`;
+          const vName = farmerCrop.variety || (isMarathi ? 'प्रमाणित वाण' : isHindi ? 'प्रमाणित किस्म' : 'Certified');
+          const dOld = farmerCrop.days_old || 60;
+          const cStage = farmerCrop.current_stage || (isMarathi ? 'वाढीची अवस्था' : isHindi ? 'वानस्पतिक वृद्धि' : 'vegetative');
+
+          if (isMarathi) {
+            reply = `तुमचे ${farmerCrop.name} पीक (${vName}) सध्या ${dOld} दिवसांचे असून ${cStage} अवस्थेत आहे. हवामान अनुकूल आहे. वेळेवर तण काढणी आणि नत्र खताचा संतुलित वापर ठेवा.`;
+          } else if (isHindi) {
+            reply = `आपकी ${farmerCrop.name} फसल (${vName}) ${dOld} दिन पुरानी है और ${cStage} चरण में है। मौसम अनुकूल है। समय पर निराई-गुड़ाई करें और यूरिया की दूसरी खुराक सिंचाई के साथ दें।`;
+          } else {
+            reply = `Your ${farmerCrop.name} crop (${vName}) is currently ${dOld} days old in ${cStage} stage. Weather conditions are supportive. Ensure balanced nitrogen application and timely weed management.`;
+          }
         }
         break;
       }

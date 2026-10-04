@@ -24,9 +24,9 @@ export interface LanguageInfo {
 }
 
 export const LANGUAGES: LanguageInfo[] = [
-  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', script: 'Devanagari', direction: 'ltr', subtitle: 'प्राथमिक भाषा (Default)' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', script: 'Devanagari', direction: 'ltr', subtitle: 'आपकी पसंदीदा भाषा' },
-  { code: 'en', name: 'English', nativeName: 'English', script: 'Latin', direction: 'ltr', subtitle: 'Your preferred language' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', script: 'Devanagari', direction: 'ltr', subtitle: 'प्राथमिक भाषा (Default)' },
+  { code: 'en', name: 'English', nativeName: 'English', script: 'Latin', direction: 'ltr', subtitle: 'English' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', script: 'Devanagari', direction: 'ltr', subtitle: 'महाराष्ट्र शेतकरी' },
   { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', script: 'Gurmukhi', direction: 'ltr', subtitle: 'ਤੁਹਾਡੀ ਪਸੰਦੀਦਾ ਭਾਸ਼ਾ' },
   { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', script: 'Gujarati', direction: 'ltr', subtitle: 'તમારી પસંદીદા ભાષા' },
   { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', script: 'Bengali', direction: 'ltr', subtitle: 'আপনার পছন্দের ভাষা' },

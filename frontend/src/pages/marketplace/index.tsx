@@ -57,8 +57,8 @@ export default function MarketplacePage() {
   const [selectedListing, setSelectedListing] = useState<CropListing | null>(null);
   const [buyQuantity, setBuyQuantity] = useState<number>(10);
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [buyerPhone, setBuyerPhone] = useState(user?.phone || '9123456780');
-  const [buyerName, setBuyerName] = useState(user?.name || 'Agro Procurement Buyer');
+  const [buyerPhone, setBuyerPhone] = useState(user?.phone || '');
+  const [buyerName, setBuyerName] = useState(user?.name || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 

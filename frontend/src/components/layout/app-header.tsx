@@ -41,7 +41,7 @@ function AppHeader({ farmerName, location: propLocation, notificationCount, clas
     propLocation ||
     (activeLoc.district && activeLoc.state
       ? `${activeLoc.district}, ${activeLoc.state}`
-      : 'स्थान निवडा (Set Location)');
+      : t('location.select_title'));
 
   const activeUnread =
     notificationCount !== undefined
@@ -125,7 +125,7 @@ function AppHeader({ farmerName, location: propLocation, notificationCount, clas
                 type="button"
                 onClick={cycleLanguage}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-sand-700 bg-sand-100 hover:bg-sand-200 transition-colors border border-sand-300"
-                title="भाषा बदला (Change Language)"
+                title={t('language.change')}
               >
                 <Globe className="h-3.5 w-3.5 text-agri-forest-800" />
                 <span>

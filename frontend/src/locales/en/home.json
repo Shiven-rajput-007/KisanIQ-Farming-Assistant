@@ -60,10 +60,35 @@
   },
   "crop_overview": {
     "title": "Your Crop",
-    "view_details": "View Details"
+    "view_details": "View Details",
+    "empty_title": "No crops registered yet",
+    "empty_desc": "Register your crops to get accurate irrigation, disease management, and market advisories.",
+    "empty_cta": "+ Add New Crop"
   },
   "assistant": {
     "title": "Ask KisanIQ",
     "subtitle": "Ask about your crop, weather, or market."
+  },
+  "hero": {
+    "badge": "KisanIQ Agricultural Decision Engine",
+    "title": "Smart farming decisions at every step, from sowing to selling",
+    "subtitle": "Decisions backed by weather, soil health, crop protection, and official CEDA Agmarknet mandi rates.",
+    "btn_register": "Get Started (Register)",
+    "btn_check_rates": "View Mandi Rates",
+    "btn_mandi_rates": "Check Mandi Rates",
+    "btn_soil_test": "Soil Testing"
+  },
+  "chat_suggestions": {
+    "rain_tomorrow": "Will it rain tomorrow?",
+    "when_water": "When should I water the crop?",
+    "market_rate_wheat": "What is today's wheat market rate?",
+    "soil_test_how": "How to do soil testing?"
+  },
+  "footer": {
+    "ceda_rates": "CEDA Agmarknet Official Mandi Rates",
+    "weather_service": "Open-Meteo & IMD Weather Service",
+    "soil_standards": "ICAR Soil Testing Standards",
+    "mission": "KisanIQ — Dedicated digital farming assistant for Indian farmers. All mandi prices and weather forecasts are fetched directly from official verified sources.",
+    "rights": "All Rights Reserved."
   }
 }

@@ -131,8 +131,33 @@ export class MarketService {
 
     const isCedaConfigured = mandiService.isConfigured();
 
-    // 2. Query verified price records for this commodity from PostgreSQL
+    let scope: 'district' | 'state' | 'national' = 'district';
+    let scopeNote: string | undefined = undefined;
+
+    // 2. Tiered search for verified price records from PostgreSQL
+    // Tier 1: Try District + State
     let priceRows = await this.queryMarketPriceRows(cropName, district, state);
+
+    if (priceRows.length > 0) {
+      scope = 'district';
+      scopeNote = district ? `Verified APMC mandi data for ${district}` : undefined;
+    } else if (state && state.trim() !== '' && state !== 'all') {
+      // Tier 2: Try State-wide
+      priceRows = await this.queryMarketPriceRows(cropName, undefined, state);
+      if (priceRows.length > 0) {
+        scope = 'state';
+        scopeNote = `District records unavailable for ${district || 'this district'} — showing verified mandis across ${state}`;
+      }
+    }
+
+    if (priceRows.length === 0) {
+      // Tier 3: Try Nationwide for this commodity
+      priceRows = await this.queryMarketPriceRows(cropName, undefined, undefined);
+      if (priceRows.length > 0) {
+        scope = 'national';
+        scopeNote = `State records unavailable — showing verified national mandis for ${cropName}`;
+      }
+    }
 
     // Check data freshness (considered fresh if fetched within 24 hours)
     let isStale = false;
@@ -153,8 +178,25 @@ export class MarketService {
           state,
           district,
         });
-        // Re-query PostgreSQL after ingestion
+        // Re-query PostgreSQL after ingestion with tiered fallback
         priceRows = await this.queryMarketPriceRows(cropName, district, state);
+        if (priceRows.length > 0) {
+          scope = 'district';
+          scopeNote = district ? `Verified APMC mandi data for ${district}` : undefined;
+        } else if (state && state.trim() !== '' && state !== 'all') {
+          priceRows = await this.queryMarketPriceRows(cropName, undefined, state);
+          if (priceRows.length > 0) {
+            scope = 'state';
+            scopeNote = `District records unavailable for ${district || 'this district'} — showing verified mandis across ${state}`;
+          }
+        }
+        if (priceRows.length === 0) {
+          priceRows = await this.queryMarketPriceRows(cropName, undefined, undefined);
+          if (priceRows.length > 0) {
+            scope = 'national';
+            scopeNote = `State records unavailable — showing verified national mandis for ${cropName}`;
+          }
+        }
       } catch (syncErr: any) {
         console.warn('[MarketService] On-demand CEDA sync notice:', syncErr.message);
       }
@@ -167,6 +209,8 @@ export class MarketService {
         : 'CEDA Agmarknet Agricultural-Market Records (Database Cache)',
       isLive: isCedaConfigured,
       isStale,
+      scope,
+      scopeNote,
       ...(isCedaConfigured
         ? { note: 'Live daily mandi price streaming active via CEDA Agmarknet API.' }
         : {
@@ -180,7 +224,7 @@ export class MarketService {
       return {
         success: false,
         code: 'MANDI_DATA_UNAVAILABLE',
-        message: 'No verified mandi data found for this selection.',
+        message: `No verified APMC market records available for "${cropName}" from CEDA Agmarknet.`,
         cropName,
         availableQuantity: quantityQuintals,
         apiStatus,

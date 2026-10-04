@@ -8,8 +8,16 @@ import { ChatSuggestionChip } from '@/components/domain/chat-suggestion';
 import { VoiceButton } from '@/components/domain/voice-button';
 import { SectionHeader } from '@/components/ui/section-header';
 import { assistantApi } from '@/api';
-import { mockChatSuggestions } from '@/services/mock/mock-data';
 import type { ChatMessage } from '@/types';
+
+const ASSISTANT_QUICK_QUESTIONS = [
+  { id: 'q1', icon: '🌧️', key: 'quick_questions.rain_tomorrow' },
+  { id: 'q2', icon: '💧', key: 'quick_questions.when_water' },
+  { id: 'q3', icon: '🌾', key: 'quick_questions.crop_health' },
+  { id: 'q4', icon: '🐛', key: 'quick_questions.crop_problem' },
+  { id: 'q5', icon: '💰', key: 'quick_questions.when_sell' },
+  { id: 'q6', icon: '🌱', key: 'quick_questions.next_crop' },
+];
 
 export default function AssistantPage() {
   const { t } = useTranslation('assistant');
@@ -81,7 +89,7 @@ export default function AssistantPage() {
       const errorMsg: ChatMessage = {
         id: `err_${Date.now()}`,
         role: 'assistant',
-        content: `क्षमा करें, संदेश भेजने में समस्या आई (${err.message})। कृपया पुनः प्रयास करें।`,
+        content: `${t('errors.network_error')} (${err.message})`,
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -109,13 +117,21 @@ export default function AssistantPage() {
         <div>
           <SectionHeader title={t('title')} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {mockChatSuggestions.map((suggestion) => (
-              <ChatSuggestionChip
-                key={suggestion.id}
-                suggestion={suggestion}
-                onClick={(query) => handleSend(query)}
-              />
-            ))}
+            {ASSISTANT_QUICK_QUESTIONS.map((item) => {
+              const queryText = t(item.key);
+              return (
+                <ChatSuggestionChip
+                  key={item.id}
+                  suggestion={{
+                    id: item.id,
+                    icon: item.icon,
+                    textKey: queryText,
+                    query: queryText,
+                  }}
+                  onClick={(query) => handleSend(query)}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -147,7 +163,7 @@ export default function AssistantPage() {
           <div className="flex justify-start">
             <Card className="bg-white border-sand-200 rounded-tl-none p-3 shadow-sm flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-agri-forest-800" />
-              <span className="text-xs text-sand-600">किसानIQ सोच रहा है...</span>
+              <span className="text-xs text-sand-600">{t('thinking')}</span>
             </Card>
           </div>
         )}
@@ -163,16 +179,17 @@ export default function AssistantPage() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={t('input_placeholder')}
+            className="flex-1 px-3 py-2 text-sm bg-transparent border-0 focus:outline-none focus:ring-0 text-sand-900"
             disabled={isLoading}
-            className="flex-1 px-3 py-2 text-sm bg-transparent outline-none text-sand-900 placeholder:text-sand-400"
           />
           <Button
             variant="primary"
-            size="icon"
+            size="sm"
             onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
+            className="px-4"
           >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </div>

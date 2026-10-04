@@ -14,23 +14,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
-import { EmptyState } from '@/components/ui/empty-state';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useAuth } from '@/context/AuthContext';
 import { recommendationApi } from '@/api';
 import { ROUTES } from '@/routes/paths';
 
 const HOME_CHAT_SUGGESTIONS = [
-  { id: 'cs1', icon: '🌧️', textKey: 'उद्या पाऊस पडेल का?', query: 'उद्या पाऊस पडेल का?' },
-  { id: 'cs2', icon: '💧', textKey: 'पिकाला पाणी कधी द्यावे?', query: 'पिकाला पाणी कधी द्यावे?' },
-  { id: 'cs3', icon: '💰', textKey: 'गव्हाचा आजचा बाजारभाव काय?', query: 'गव्हाचा आजचा बाजारभाव काय?' },
-  { id: 'cs4', icon: '🧪', textKey: 'माती परीक्षण कसे करावे?', query: 'माती परीक्षण कसे करावे?' },
+  { id: 'cs1', icon: '🌧️', key: 'chat_suggestions.rain_tomorrow' },
+  { id: 'cs2', icon: '💧', key: 'chat_suggestions.when_water' },
+  { id: 'cs3', icon: '💰', key: 'chat_suggestions.market_rate_wheat' },
+  { id: 'cs4', icon: '🧪', key: 'chat_suggestions.soil_test_how' },
 ];
 
 export default function HomePage() {
   const { t } = useTranslation('home');
   const navigate = useNavigate();
-  const { isAuthenticated, farmer } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { data, isLoading, error, refetch } = useDashboard();
   const [showWhy, setShowWhy] = useState(false);
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
@@ -86,7 +85,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-agri-leaf-600/90 backdrop-blur-md text-white text-xs font-semibold tracking-wide uppercase border border-agri-leaf-300/30">
               <Sparkles className="h-3.5 w-3.5" />
-              KisanIQ कृषी निर्णय प्रणाली
+              {t('hero.badge')}
             </span>
             {data.farmer?.location && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-medium">
@@ -97,10 +96,10 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white max-w-2xl leading-tight">
-            पेरणीपासून ते विक्रीपर्यंत, प्रत्येक टप्प्यावर हुशार निर्णय
+            {t('hero.title')}
           </h1>
           <p className="text-sm sm:text-base text-sand-100/95 mt-2 max-w-xl font-normal">
-            हवामान, माती आरोग्य, पीक संरक्षण आणि CEDA Agmarknet अधिकृत बाजारभावावर आधारित निर्णय.
+            {t('hero.subtitle')}
           </p>
 
           <div className="flex flex-wrap items-center gap-3 mt-5">
@@ -112,7 +111,7 @@ export default function HomePage() {
                   onClick={() => navigate(ROUTES.REGISTER)}
                   className="font-bold shadow-md hover:scale-[1.02] transition-transform"
                 >
-                  <span>सुरू करा (नोंदणी)</span>
+                  <span>{t('hero.btn_register')}</span>
                   <ArrowRight className="h-4 w-4" />
                 </Button>
                 <Button
@@ -122,7 +121,7 @@ export default function HomePage() {
                   className="bg-white/95 text-agri-forest-900 font-semibold border-white hover:bg-white"
                 >
                   <TrendingUp className="h-4 w-4" />
-                  <span>बाजार भाव पहा</span>
+                  <span>{t('hero.btn_check_rates')}</span>
                 </Button>
               </>
             ) : (
@@ -134,7 +133,7 @@ export default function HomePage() {
                   className="font-bold shadow-md hover:scale-[1.02] transition-transform"
                 >
                   <TrendingUp className="h-4 w-4" />
-                  <span>बाजार भाव तपासा</span>
+                  <span>{t('hero.btn_mandi_rates')}</span>
                 </Button>
                 <Button
                   variant="secondary"
@@ -143,7 +142,7 @@ export default function HomePage() {
                   className="bg-white/95 text-agri-forest-900 font-semibold border-white hover:bg-white"
                 >
                   <Sprout className="h-4 w-4" />
-                  <span>माती परीक्षण</span>
+                  <span>{t('hero.btn_soil_test')}</span>
                 </Button>
               </>
             )}
@@ -222,16 +221,16 @@ export default function HomePage() {
         ) : (
           <Card className="border-dashed border-sand-300 bg-sand-50/50">
             <CardContent className="p-4 sm:p-6 text-center">
-              <p className="text-sm font-semibold text-sand-800">अद्याप कोणतेही पीक जोडलेले नाही</p>
+              <p className="text-sm font-semibold text-sand-800">{t('crop_overview.empty_title')}</p>
               <p className="text-xs text-sand-500 mt-1 mb-4">
-                आपल्या शेतातील पिकांची नोंद करा जेणेकरून अचूक सिंचन आणि रोग व्यवस्थापन सल्ला मिळू शकेल.
+                {t('crop_overview.empty_desc')}
               </p>
               <Button
                 variant="primary"
                 size="sm"
                 onClick={() => navigate(ROUTES.MERI_FASAL)}
               >
-                + नवीन पीक जोडा
+                {t('crop_overview.empty_cta')}
               </Button>
             </CardContent>
           </Card>
@@ -249,13 +248,21 @@ export default function HomePage() {
           }}
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {HOME_CHAT_SUGGESTIONS.map((suggestion) => (
-            <ChatSuggestionChip
-              key={suggestion.id}
-              suggestion={suggestion}
-              onClick={() => navigate(ROUTES.ASSISTANT, { state: { initialQuery: suggestion.query } })}
-            />
-          ))}
+          {HOME_CHAT_SUGGESTIONS.map((suggestion) => {
+            const queryText = t(suggestion.key);
+            return (
+              <ChatSuggestionChip
+                key={suggestion.id}
+                suggestion={{
+                  id: suggestion.id,
+                  icon: suggestion.icon,
+                  textKey: queryText,
+                  query: queryText,
+                }}
+                onClick={() => navigate(ROUTES.ASSISTANT, { state: { initialQuery: queryText } })}
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -264,18 +271,18 @@ export default function HomePage() {
         <div className="flex flex-wrap items-center justify-center gap-3 font-medium text-sand-600">
           <span className="flex items-center gap-1">
             <ShieldCheck className="h-4 w-4 text-agri-forest-700" />
-            CEDA Agmarknet अधिकृत बाजार दर
+            {t('footer.ceda_rates')}
           </span>
           <span>•</span>
-          <span>Open-Meteo व IMD हवामान सेवा</span>
+          <span>{t('footer.weather_service')}</span>
           <span>•</span>
-          <span>ICAR माती परीक्षण निकष</span>
+          <span>{t('footer.soil_standards')}</span>
         </div>
         <p className="max-w-xl mx-auto text-sand-400">
-          KisanIQ — भारतीय शेतकऱ्यांसाठी समर्पित डिजिटल कृषी सहाय्यक. सर्व बाजारभाव आणि हवामान अंदाज थेट अधिकृत स्रोतांवरून घेतलेले आहेत.
+          {t('footer.mission')}
         </p>
         <p className="text-sand-400 font-mono text-[11px]">
-          © {new Date().getFullYear()} KisanIQ. All Rights Reserved.
+          © {new Date().getFullYear()} KisanIQ. {t('footer.rights')}
         </p>
       </footer>
     </div>

@@ -9,6 +9,7 @@
     "soil_testing": "माती परीक्षण",
     "bechein": "बाजार / विक्री",
     "marketplace": "खरेदीदार बाजार",
+    "mandi_rates": "बाजार भाव",
     "madad": "सहाय्यक"
   },
   "buttons": {
@@ -23,6 +24,7 @@
     "cancel": "रद्द करा",
     "change": "बदला",
     "add": "जोडा",
+    "search": "शोधा",
     "view_all": "सर्व पहा",
     "learn_more": "अधिक जाणून घ्या"
   },

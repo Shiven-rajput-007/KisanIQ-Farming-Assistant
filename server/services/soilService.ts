@@ -143,6 +143,20 @@ export class SoilService {
     const date = data.sampleCollectionDate || new Date().toISOString().split('T')[0];
     const mode = data.testingMode || 'LAB_TEST';
 
+    let farmId = data.farmId || null;
+    let fieldId = data.fieldId || null;
+
+    if (!farmId && data.farmerId) {
+      try {
+        const farmRes = await db.query('SELECT id FROM farms WHERE farmer_id = $1 LIMIT 1', [data.farmerId]);
+        if (farmRes.rows.length > 0) {
+          farmId = farmRes.rows[0].id;
+        }
+      } catch (err) {
+        console.warn('[SoilService] Error fetching farmer farm:', err);
+      }
+    }
+
     await db.query(
       `INSERT INTO soil_test_requests (
         id, farmer_id, farm_id, field_id, crop_name, lab_id, sample_id,
@@ -151,8 +165,8 @@ export class SoilService {
       [
         id,
         data.farmerId,
-        data.farmId || 'farm_ramesh_1',
-        data.fieldId || 'field_1',
+        farmId,
+        fieldId,
         data.cropName,
         data.labId,
         sampleId,

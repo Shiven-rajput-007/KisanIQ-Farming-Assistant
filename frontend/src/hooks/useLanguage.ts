@@ -6,6 +6,9 @@ export function useLanguage() {
   const { i18n } = useTranslation();
 
   const changeLanguage = useCallback(async (lang: SupportedLanguage) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kisaniq_language', lang);
+    }
     await i18n.changeLanguage(lang);
   }, [i18n]);
 

@@ -1,8 +1,21 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 import resourcesToBackend from 'i18next-resources-to-backend';
-import { SUPPORTED_LANGUAGES } from '@/types/i18n';
+
+/**
+ * Determine initial language:
+ * 1. Saved user preference in localStorage (if valid)
+ * 2. Strict default: 'hi' (Hindi). Browser language does NOT override Hindi default.
+ */
+const getInitialLanguage = (): string => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('kisaniq_language');
+    if (saved && ['hi', 'en', 'mr'].includes(saved)) {
+      return saved;
+    }
+  }
+  return 'hi';
+};
 
 i18n
   .use(
@@ -11,23 +24,16 @@ i18n
         import(`../locales/${language}/${namespace}.json`)
     )
   )
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    lng: (typeof window !== 'undefined' && localStorage.getItem('kisaniq_language')) || 'mr',
+    lng: getInitialLanguage(),
     fallbackLng: {
-      default: ['mr', 'hi', 'en'],
+      default: ['hi', 'en', 'mr'],
     },
-    supportedLngs: [...SUPPORTED_LANGUAGES],
+    supportedLngs: ['hi', 'en', 'mr'],
     defaultNS: 'common',
     ns: ['common', 'home', 'crop', 'market', 'weather', 'risk', 'assistant', 'profile', 'notifications', 'soil'],
     load: 'languageOnly',
-
-    detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'kisaniq_language',
-    },
 
     interpolation: {
       escapeValue: false,
@@ -37,7 +43,6 @@ i18n
       useSuspense: true,
     },
 
-    // Development: log missing keys
     saveMissing: import.meta.env.DEV,
     missingKeyHandler: (_lng, ns, key) => {
       if (import.meta.env.DEV) {

@@ -70,5 +70,31 @@
     "field_grade": "प्रत / दर्जा",
     "field_description": "तपशील / टीप (पर्यायी)",
     "btn_publish": "नोंदणी प्रसिद्ध करा"
+  },
+  "select_commodity": "पीक निवडा",
+  "sale_quantity": "विक्री प्रमाण (क्विंटल)",
+  "farmer_location": "शेतकऱ्याचे स्थान: {{location}}",
+  "location_not_set": "स्थान निवडलेले नाही",
+  "source_ceda": "स्रोत: CEDA Agmarknet",
+  "rate_date": "दर तारीख: {{date}}",
+  "todays_rates": "आजचे दर",
+  "update_pending": "दर अद्यतन प्रलंबित",
+  "empty_mandi_title": "या निवडीसाठी कोणताही अधिकृत बाजार भाव उपलब्ध नाही",
+  "empty_mandi_desc": "CEDA Agmarknet कडून निवडलेल्या पिकासाठी ({{crop}}) सध्या कोणतेही अधिकृत आवक दर उपलब्ध नाहीत.",
+  "confirm_sale_title": "{{market}} ला विक्री निश्चित करा",
+  "btn_confirm_sale": "विक्री निश्चित करा आणि वाहन बुक करा",
+  "est_net_return": "अंदाजे निव्वळ परतावा",
+  "scope_district": "जिल्हा बाजार भाव",
+  "scope_state": "सत्यापित {{state}} राज्यातील बाजार भाव (जिल्हा माहिती उपलब्ध नाही)",
+  "scope_national": "सत्यापित राष्ट्रीय बाजार भाव (राज्य माहिती उपलब्ध नाही)",
+  "commodities": {
+    "Wheat": "गहू",
+    "Soybean": "सोयाबीन",
+    "Cotton": "कापूस",
+    "Mustard": "मोहरी",
+    "Gram": "हरभरा / चना",
+    "Maize": "मका",
+    "Onion": "कांदा",
+    "Paddy": "तांदूळ / भात"
   }
 }

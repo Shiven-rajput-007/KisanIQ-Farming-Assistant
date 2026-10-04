@@ -57,9 +57,9 @@ export default function WeatherPage() {
           <div className="w-16 h-16 rounded-full bg-agri-forest-100 flex items-center justify-center mx-auto mb-4">
             <MapPin className="h-8 w-8 text-agri-forest-800" />
           </div>
-          <h2 className="text-lg font-bold text-sand-900 mb-2">शेताचे स्थान आवश्यक आहे (Location Required)</h2>
+          <h2 className="text-lg font-bold text-sand-900 mb-2">{t('location_required_title')}</h2>
           <p className="text-sm text-sand-600 max-w-md mx-auto mb-6">
-            अचूक हवामान आणि सिंचन सल्ला मिळवण्यासाठी कृपया आपल्या शेताचे स्थान निवडा किंवा जीपीएस सुरू करा.
+            {t('location_required_desc')}
           </p>
           <Button
             variant="primary"
@@ -67,7 +67,7 @@ export default function WeatherPage() {
             className="font-semibold shadow-sm"
           >
             <MapPin className="h-4 w-4 mr-1.5" />
-            स्थान निवडा (Set Farm Location)
+            {t('btn_set_location')}
           </Button>
         </Card>
 
@@ -116,14 +116,14 @@ export default function WeatherPage() {
             onClick={() => setShowLocationModal(true)}
             className="text-xs font-semibold text-agri-forest-800"
           >
-            बदला (Change)
+            {t('btn_change')}
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => refetch()}
             className="text-xs text-sand-600 p-2"
-            title="Refresh weather"
+            title={t('btn_refresh')}
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -145,7 +145,7 @@ export default function WeatherPage() {
               </p>
               {current.feelsLike !== null && (
                 <p className="text-xs text-sand-500 mt-0.5">
-                  अंगाला जाणवणारे तापमान: {current.feelsLike}°
+                  {t('feels_like', { temp: current.feelsLike })}
                 </p>
               )}
             </div>

@@ -23,14 +23,25 @@ import { PartialSellingCard } from '@/components/domain/partial-selling-card';
 import { WhyExplanation } from '@/components/domain/why-explanation';
 import { useMarket } from '@/hooks/useMarket';
 import { useActiveLocation } from '@/context/LocationContext';
+import { useAuth } from '@/context/AuthContext';
+import { useCrops } from '@/hooks/useCrops';
 import { useOrders } from '@/hooks/useOrders';
 import { marketApi, listingsApi, marketplaceApi, type CropListing, type MarketplaceOrder } from '@/api';
 
 export default function MarketPage() {
   const { t } = useTranslation('market');
   const { location } = useActiveLocation();
+  const { farmer } = useAuth();
+  const { data: cropsData } = useCrops();
   const [selectedCrop, setSelectedCrop] = useState('Wheat');
   const [selectedQuantity, setSelectedQuantity] = useState(100);
+
+  useEffect(() => {
+    if (cropsData?.crops && cropsData.crops.length > 0 && cropsData.crops[0].name) {
+      setSelectedCrop(cropsData.crops[0].name);
+    }
+  }, [cropsData]);
+
   const { data, isLoading, error, refetch } = useMarket(selectedCrop, selectedQuantity);
   const { orders, refetch: refetchOrders } = useOrders();
 
@@ -215,30 +226,21 @@ export default function MarketPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-semibold text-sand-700 mb-1">
-                  🌾 पीक निवडा (Select Commodity)
+                  🌾 {t('select_commodity')}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'Wheat', labelMr: 'गहू (Wheat)' },
-                    { id: 'Soybean', labelMr: 'सोयाबीन (Soybean)' },
-                    { id: 'Cotton', labelMr: 'कापूस (Cotton)' },
-                    { id: 'Mustard', labelMr: 'मोहरी (Mustard)' },
-                    { id: 'Gram', labelMr: 'हरभरा (Gram/Chana)' },
-                    { id: 'Maize', labelMr: 'मका (Maize)' },
-                    { id: 'Onion', labelMr: 'कांदा (Onion)' },
-                    { id: 'Paddy', labelMr: 'तांदूळ (Paddy)' },
-                  ].map((crop) => (
+                  {['Wheat', 'Soybean', 'Cotton', 'Mustard', 'Gram', 'Maize', 'Onion', 'Paddy'].map((cropId) => (
                     <button
-                      key={crop.id}
+                      key={cropId}
                       type="button"
-                      onClick={() => setSelectedCrop(crop.id)}
+                      onClick={() => setSelectedCrop(cropId)}
                       className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all ${
-                        selectedCrop === crop.id
+                        selectedCrop === cropId
                           ? 'bg-agri-forest-800 text-white shadow-xs'
                           : 'bg-sand-100 text-sand-700 hover:bg-sand-200'
                       }`}
                     >
-                      {crop.labelMr}
+                      {t(`commodities.${cropId}`, { defaultValue: cropId })}
                     </button>
                   ))}
                 </div>
@@ -246,7 +248,7 @@ export default function MarketPage() {
 
               <div className="w-full sm:w-40">
                 <label className="block text-xs font-semibold text-sand-700 mb-1">
-                  ⚖️ विक्री प्रमाण (क्विंटल)
+                  ⚖️ {t('sale_quantity')}
                 </label>
                 <div className="flex items-center gap-1.5">
                   <input
@@ -257,7 +259,7 @@ export default function MarketPage() {
                     onChange={(e) => setSelectedQuantity(Math.max(1, Number(e.target.value) || 1))}
                     className="w-full px-3 py-1.5 text-xs font-bold border border-sand-300 rounded-lg bg-sand-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-agri-forest-500"
                   />
-                  <span className="text-xs text-sand-500 font-medium whitespace-nowrap">क्विंटल</span>
+                  <span className="text-xs text-sand-500 font-medium whitespace-nowrap">{t('common:units.quintal')}</span>
                 </div>
               </div>
             </div>
@@ -268,20 +270,24 @@ export default function MarketPage() {
             <div className="flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-agri-forest-700" />
               <span>
-                शेतकऱ्याचे स्थान: {location.district && location.state ? `${location.district}, ${location.state}` : (userCoordinates ? `${userCoordinates.lat.toFixed(4)}, ${userCoordinates.lon.toFixed(4)}` : 'स्थान निवडलेले नाही')}
+                {t('farmer_location', {
+                  location: location.district && location.state
+                    ? `${location.district}, ${location.state}`
+                    : (userCoordinates ? `${userCoordinates.lat.toFixed(4)}, ${userCoordinates.lon.toFixed(4)}` : t('location_not_set'))
+                })}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1 font-semibold text-agri-forest-900 bg-white px-2 py-0.5 rounded-md border border-sand-300">
                 <Building className="h-3.5 w-3.5 text-agri-gold-600" />
-                स्रोत: CEDA Agmarknet
+                {t('source_ceda')}
               </span>
               <span className="text-sand-500">
-                दर तारीख: {data.lastUpdated ? new Date(data.lastUpdated).toLocaleDateString('mr-IN') : 'आजचे दर'}
+                {t('rate_date', { date: data.lastUpdated ? new Date(data.lastUpdated).toLocaleDateString() : t('todays_rates') })}
               </span>
               {apiStatus?.isStale && (
                 <span className="text-risk-amber-700 bg-risk-amber-100 px-2 py-0.5 rounded text-[11px] font-medium">
-                  दर अद्यतन प्रलंबित
+                  {t('update_pending')}
                 </span>
               )}
             </div>
@@ -311,12 +317,12 @@ export default function MarketPage() {
           {sellingModal && (
             <Card className="p-4 border-2 border-agri-forest-800 bg-agri-forest-50/50">
               <h3 className="font-bold text-base text-sand-900 mb-2">
-                Confirm Sale to {sellingModal.market.name}
+                {t('confirm_sale_title', { market: sellingModal.market.name })}
               </h3>
               <div className="space-y-2 text-sm mb-4">
-                <p className="text-sand-700">Quantity: <strong>{sellingModal.quantity} quintals</strong></p>
-                <p className="text-sand-700">Mandi Price: <strong>₹{sellingModal.market.price}/q</strong></p>
-                <p className="text-sand-700">Est. Net Return: <strong>₹{(sellingModal.market.price * sellingModal.quantity).toLocaleString('en-IN')}</strong></p>
+                <p className="text-sand-700">{t('sale_quantity')}: <strong>{sellingModal.quantity} {t('common:units.quintal')}</strong></p>
+                <p className="text-sand-700">{t('card.price')}: <strong>₹{sellingModal.market.price}/{t('common:units.quintal')}</strong></p>
+                <p className="text-sand-700">{t('est_net_return')}: <strong>₹{(sellingModal.market.price * sellingModal.quantity).toLocaleString()}</strong></p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -324,7 +330,7 @@ export default function MarketPage() {
                   onClick={() => handlePlaceOrder(sellingModal.market, sellingModal.quantity)}
                   isLoading={isSubmitting}
                 >
-                  Confirm Sale & Book Vehicle
+                  {t('btn_confirm_sale')}
                 </Button>
                 <Button variant="ghost" onClick={() => setSellingModal(null)}>
                   {t('common:buttons.cancel')}
@@ -384,14 +390,14 @@ export default function MarketPage() {
                   <span className="text-2xl">🌾</span>
                 </div>
                 <h3 className="text-base font-bold text-sand-900 mb-1">
-                  या निवडीसाठी कोणताही अधिकृत बाजार भाव उपलब्ध नाही
+                  {t('empty_mandi_title')}
                 </h3>
                 <p className="text-xs text-sand-600 max-w-md mx-auto mb-4">
-                  CEDA Agmarknet कडून निवडलेल्या पिकासाठी ({selectedCrop}) सध्या कोणतेही अधिकृत आवक दर उपलब्ध नाहीत.
+                  {t('empty_mandi_desc', { crop: t(`commodities.${selectedCrop}`, { defaultValue: selectedCrop }) })}
                 </p>
                 <div className="flex justify-center">
                   <Button variant="secondary" size="sm" onClick={() => refetch()}>
-                    पुन्हा तपासा (Retry)
+                    {t('common:buttons.retry')}
                   </Button>
                 </div>
               </Card>

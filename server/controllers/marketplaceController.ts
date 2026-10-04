@@ -4,7 +4,11 @@ import { AuthRequest } from '../middleware/auth.js';
 
 export async function placeMarketplaceOrder(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const buyerId = req.userId || 'user_buyer_vikram';
+    if (!req.userId) {
+      res.status(401).json({ success: false, error: 'Unauthorized: Authentication required to place order' });
+      return;
+    }
+    const buyerId = req.userId;
     const {
       listingId,
       quantityQuintals,
@@ -118,7 +122,11 @@ export async function placeMarketplaceOrder(req: AuthRequest, res: Response): Pr
 
 export async function getBuyerOrders(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const buyerId = req.userId || 'user_buyer_vikram';
+    if (!req.userId) {
+      res.status(401).json({ success: false, error: 'Unauthorized: Authentication required' });
+      return;
+    }
+    const buyerId = req.userId;
 
     const ordersRes = await db.query(
       `SELECT o.*, f.name as farmer_name, f.district as farmer_district, f.state as farmer_state, f.phone as farmer_phone
@@ -178,7 +186,11 @@ export async function updateMarketplaceOrderStatus(req: AuthRequest, res: Respon
 
 export async function getBuyerProfile(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const userId = req.userId || 'user_buyer_vikram';
+    if (!req.userId) {
+      res.status(401).json({ success: false, error: 'Unauthorized: Authentication required' });
+      return;
+    }
+    const userId = req.userId;
 
     const userRes = await db.query('SELECT id, name, phone, role FROM users WHERE id = $1', [userId]);
     const bpRes = await db.query('SELECT * FROM buyer_profiles WHERE user_id = $1', [userId]);
@@ -203,8 +215,8 @@ export async function getBuyerProfile(req: AuthRequest, res: Response): Promise<
         gstin: profile.gstin || '',
         address: profile.address || '',
         city: profile.city || '',
-        district: profile.district || 'Indore',
-        state: profile.state || 'Madhya Pradesh',
+        district: profile.district || null,
+        state: profile.state || null,
         pincode: profile.pincode || '',
       },
     });

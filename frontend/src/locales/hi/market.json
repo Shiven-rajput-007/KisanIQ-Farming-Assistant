@@ -70,5 +70,31 @@
     "field_grade": "गुणवत्ता श्रेणी",
     "field_description": "विवरण (वैकल्पिक)",
     "btn_publish": "फसल प्रकाशित करें"
+  },
+  "select_commodity": "जिंस / फसल चुनें",
+  "sale_quantity": "बिक्री मात्रा (क्विंटल)",
+  "farmer_location": "किसान का स्थान: {{location}}",
+  "location_not_set": "स्थान निर्धारित नहीं है",
+  "source_ceda": "स्रोत: CEDA Agmarknet",
+  "rate_date": "दर दिनांक: {{date}}",
+  "todays_rates": "आज के भाव",
+  "update_pending": "दर अद्यतन लंबित",
+  "empty_mandi_title": "इस चयन के लिए कोई सत्यापित मंडी भाव उपलब्ध नहीं है",
+  "empty_mandi_desc": "CEDA Agmarknet से {{crop}} के लिए वर्तमान में कोई सत्यापित आवक या दर उपलब्ध नहीं है।",
+  "confirm_sale_title": "{{market}} को बिक्री की पुष्टि करें",
+  "btn_confirm_sale": "बिक्री की पुष्टि करें और वाहन बुक करें",
+  "est_net_return": "अनुमानित शुद्ध रिटर्न",
+  "scope_district": "जिला मंडी भाव",
+  "scope_state": "सत्यापित {{state}} राज्य मंडियों के भाव (जिले का डेटा अनुपलब्ध)",
+  "scope_national": "सत्यापित राष्ट्रीय मंडियों के भाव (राज्य का डेटा अनुपलब्ध)",
+  "commodities": {
+    "Wheat": "गेहूं",
+    "Soybean": "सोयाबीन",
+    "Cotton": "कपास",
+    "Mustard": "सरसों",
+    "Gram": "चना / हरभरा",
+    "Maize": "मक्का",
+    "Onion": "प्याज़",
+    "Paddy": "धान / चावल"
   }
 }

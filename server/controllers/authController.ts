@@ -83,8 +83,8 @@ export async function register(req: Request, res: Response): Promise<void> {
     if (userRole === 'buyer') {
       // 2. Create Buyer Profile
       const buyerId = `bp_${Date.now()}`;
-      const buyerLat = latitude !== undefined ? Number(latitude) : 22.7196;
-      const buyerLng = longitude !== undefined ? Number(longitude) : 75.8577;
+      const buyerLat = (latitude !== undefined && latitude !== null && !isNaN(Number(latitude))) ? Number(latitude) : null;
+      const buyerLng = (longitude !== undefined && longitude !== null && !isNaN(Number(longitude))) ? Number(longitude) : null;
 
       await db.query(
         `INSERT INTO buyer_profiles (id, user_id, company_name, buyer_type, gstin, address, city, district, state, pincode, phone, email, purchase_interests, latitude, longitude)
@@ -102,7 +102,7 @@ export async function register(req: Request, res: Response): Promise<void> {
           pincode,
           phone.trim(),
           email ? email.trim() : '',
-          purchaseInterests || 'Wheat, Mustard, Soybean',
+          purchaseInterests || null,
           buyerLat,
           buyerLng,
         ]
@@ -128,7 +128,7 @@ export async function register(req: Request, res: Response): Promise<void> {
           phone: phone.trim(),
           email,
           gstin,
-          purchaseInterests: purchaseInterests || 'Wheat, Mustard, Soybean',
+          purchaseInterests: purchaseInterests || null,
           location: {
             address: address || '',
             city: city || district,
@@ -169,41 +169,39 @@ export async function register(req: Request, res: Response): Promise<void> {
       ]
     );
 
-    // 3. Create Default Farm Profile
-    const area = Number(farmSize) > 0 ? Number(farmSize) : 5.0;
-    await db.query(
-      `INSERT INTO farms (id, farmer_id, total_area, soil_type, irrigation_source)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [`farm_${Date.now()}`, farmerId, area, soilType, irrigationSource]
-    );
+    // 3. Create Farm Profile ONLY if farm size or soil/irrigation is specified
+    if (farmSize || soilType || irrigationSource) {
+      const area = Number(farmSize) > 0 ? Number(farmSize) : null;
+      await db.query(
+        `INSERT INTO farms (id, farmer_id, total_area, soil_type, irrigation_source)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [`farm_${Date.now()}`, farmerId, area, soilType || null, irrigationSource || null]
+      );
+    }
 
-    // 4. If main crop specified or default to Wheat
-    const cropTitle = mainCrop && mainCrop.trim() ? mainCrop.trim() : 'Wheat';
-    const cropKey = cropTitle.toLowerCase();
-    const cropId = `crop_${cropKey}_${Date.now()}`;
-    const sowingDate = new Date();
-    sowingDate.setDate(sowingDate.getDate() - 45);
-    const harvestDate = new Date();
-    harvestDate.setDate(harvestDate.getDate() + 75);
+    // 4. Create Crop ONLY if mainCrop was specified by the user
+    if (mainCrop && mainCrop.trim()) {
+      const cropTitle = mainCrop.trim();
+      const cropKey = cropTitle.toLowerCase();
+      const cropId = `crop_${cropKey}_${Date.now()}`;
+      const areaVal = Number(farmSize) > 0 ? Number(farmSize) : null;
 
-    await db.query(
-      `INSERT INTO crops (id, farmer_id, name, name_key, variety, sowing_date, expected_harvest_date, current_stage, days_old, area, expected_yield, icon)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-      [
-        cropId,
-        farmerId,
-        cropTitle,
-        cropKey,
-        'High-Yield / Certified',
-        sowingDate.toISOString().split('T')[0],
-        harvestDate.toISOString().split('T')[0],
-        'vegetative',
-        45,
-        area,
-        area * 20.0,
-        cropKey.includes('rice') ? '🌾' : cropKey.includes('mustard') ? '🌻' : '🌾',
-      ]
-    );
+      await db.query(
+        `INSERT INTO crops (id, farmer_id, name, name_key, variety, current_stage, area, expected_yield, icon)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          cropId,
+          farmerId,
+          cropTitle,
+          cropKey,
+          'Standard',
+          'vegetative',
+          areaVal,
+          areaVal ? areaVal * 20.0 : null,
+          cropKey.includes('rice') ? '🌾' : cropKey.includes('mustard') ? '🌻' : '🌾',
+        ]
+      );
+    }
 
     const token = generateToken({
       userId,
@@ -298,8 +296,8 @@ export async function login(req: Request, res: Response): Promise<void> {
             state: bp.state,
             pincode: bp.pincode,
             coordinates: {
-              lat: Number(bp.latitude) || 22.7196,
-              lng: Number(bp.longitude) || 75.8577,
+              lat: (bp.latitude !== null && bp.latitude !== undefined && !isNaN(Number(bp.latitude))) ? Number(bp.latitude) : null,
+              lng: (bp.longitude !== null && bp.longitude !== undefined && !isNaN(Number(bp.longitude))) ? Number(bp.longitude) : null,
             },
           },
         },
