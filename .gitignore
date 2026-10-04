@@ -46,6 +46,7 @@ __pycache__/
 *.zip
 *.html
 *.tex
+*.db
 build_*.py
 generate_*.py
 run_automated_audit.py
@@ -54,3 +55,6 @@ test_*.docx
 test.pdf
 chrome_test.pdf
 CHATGPT_PROJECT_CONTEXT.md
+IEEE_UPI_Fraud_Awareness_Review_Paper.*
+docx_helpers.py
+
