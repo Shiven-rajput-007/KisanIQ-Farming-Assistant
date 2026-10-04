@@ -79,7 +79,11 @@ export async function getListings(req: Request, res: Response): Promise<void> {
 
 export async function getFarmerListings(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const farmerId = req.farmerId || 'farmer_ramesh';
+    const farmerId = req.farmerId;
+    if (!farmerId) {
+      res.status(401).json({ success: false, error: 'Unauthorized: Authentication required to view listings' });
+      return;
+    }
 
     // 1. Get farmer's crop listings
     const listingsRes = await db.query(
@@ -137,7 +141,11 @@ export async function getFarmerListings(req: AuthRequest, res: Response): Promis
 
 export async function createListing(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const farmerId = req.farmerId || 'farmer_ramesh';
+    const farmerId = req.farmerId;
+    if (!farmerId) {
+      res.status(401).json({ success: false, error: 'Unauthorized: Authentication required to create listing' });
+      return;
+    }
     const {
       cropName,
       variety,

@@ -41,7 +41,7 @@ function AppHeader({ farmerName, location: propLocation, notificationCount, clas
     propLocation ||
     (activeLoc.district && activeLoc.state
       ? `${activeLoc.district}, ${activeLoc.state}`
-      : 'Gwalior, MP');
+      : 'स्थान निवडा (Set Location)');
 
   const activeUnread =
     notificationCount !== undefined

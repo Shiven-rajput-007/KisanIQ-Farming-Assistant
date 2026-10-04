@@ -30,23 +30,54 @@ export interface RiskAssessment {
 }
 
 export class RiskService {
-  async getRiskAssessment(farmerId: string = 'farmer_ramesh'): Promise<RiskAssessment> {
-    const { current, forecast } = await weatherService.getWeather();
+  async getRiskAssessment(farmerId?: string, lat?: number, lon?: number): Promise<RiskAssessment> {
+    let targetLat = lat;
+    let targetLon = lon;
+
+    if ((targetLat === undefined || targetLon === undefined) && farmerId && farmerId !== 'guest_user') {
+      try {
+        const farmerRes = await db.query('SELECT latitude, longitude FROM farmers WHERE id = $1', [farmerId]);
+        if (farmerRes.rows.length > 0 && farmerRes.rows[0].latitude && farmerRes.rows[0].longitude) {
+          targetLat = parseFloat(farmerRes.rows[0].latitude);
+          targetLon = parseFloat(farmerRes.rows[0].longitude);
+        }
+      } catch (e) {
+        console.warn('[RiskService] Farmer coordinates lookup error:', e);
+      }
+    }
+
+    if (
+      targetLat === undefined ||
+      targetLon === undefined ||
+      isNaN(targetLat) ||
+      isNaN(targetLon) ||
+      targetLat < -90 ||
+      targetLat > 90 ||
+      targetLon < -180 ||
+      targetLon > 180
+    ) {
+      const err = new Error('Valid geographic coordinates (latitude and longitude) are required for risk assessment.');
+      (err as any).code = 'LOCATION_REQUIRED';
+      throw err;
+    }
+
+    const { current, forecast } = await weatherService.getWeather(targetLat, targetLon);
 
     // 1. Weather risk score (0-100)
     let weatherScore = 15;
-    const tomorrowRain = forecast[1]?.rainProbability || 0;
-    if (tomorrowRain >= 70 || current.rainProbability >= 70) {
+    const tomorrowRain = forecast[1]?.rainProbability ?? forecast[0]?.rainProbability ?? 0;
+    const currentRain = current.rainProbability ?? 0;
+    if (tomorrowRain >= 70 || currentRain >= 70) {
       weatherScore = 45; // Moderate risk due to rain/storm
     }
-    if (current.windSpeed > 25) {
+    if ((current.windSpeed ?? 0) > 25) {
       weatherScore += 20;
     }
     const weatherLevel = weatherScore > 60 ? 'high' : weatherScore > 30 ? 'medium' : 'low';
 
     // 2. Crop health risk score (0-100)
     let cropHealthScore = 20;
-    if (current.humidity >= 65) {
+    if ((current.humidity ?? 0) >= 65) {
       cropHealthScore = 38; // Disease risk due to humidity
     }
     const cropHealthLevel = cropHealthScore > 60 ? 'high' : cropHealthScore > 30 ? 'medium' : 'low';
@@ -73,20 +104,27 @@ export class RiskService {
     ];
 
     // Fetch alerts from database
-    const alertRes = await db.query(
-      `SELECT * FROM alerts WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 5`,
-      [farmerId]
-    );
+    let alerts: RiskAlert[] = [];
+    if (farmerId && farmerId !== 'guest_user') {
+      try {
+        const alertRes = await db.query(
+          `SELECT * FROM alerts WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 5`,
+          [farmerId]
+        );
 
-    const alerts: RiskAlert[] = alertRes.rows.map((row: any) => ({
-      id: row.id,
-      categoryType: row.severity === 'high' ? 'weather' : 'crop_health',
-      severity: row.severity,
-      titleKey: row.title_key,
-      descriptionKey: row.description_key,
-      actionKey: row.action_key || 'details',
-      icon: row.icon || '⚠️',
-    }));
+        alerts = alertRes.rows.map((row: any) => ({
+          id: row.id,
+          categoryType: row.severity === 'high' ? 'weather' : 'crop_health',
+          severity: row.severity,
+          titleKey: row.title_key,
+          descriptionKey: row.description_key,
+          actionKey: row.action_key || 'details',
+          icon: row.icon || '⚠️',
+        }));
+      } catch (e) {
+        console.warn('[RiskService] Alerts lookup error:', e);
+      }
+    }
 
     return {
       overallRisk,
@@ -94,7 +132,7 @@ export class RiskService {
       categories,
       alerts,
       lastUpdated: new Date().toISOString(),
-      isDemo: current.isDemo ?? false,
+      isDemo: false,
     };
   }
 }

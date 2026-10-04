@@ -81,11 +81,11 @@ export default function RegisterPage() {
     confirmPassword: '',
     address: '',
     village: '',
-    district: 'Gwalior',
-    state: 'Madhya Pradesh',
-    pincode: '474001',
-    latitude: 26.2183,
-    longitude: 78.1828,
+    district: '',
+    state: '',
+    pincode: '',
+    latitude: '' as any,
+    longitude: '' as any,
     // Farmer fields
     farmSize: '5',
     soilType: 'alluvial',
@@ -149,12 +149,15 @@ export default function RegisterPage() {
     }
 
     try {
+      const parsedLat = formData.latitude ? Number(formData.latitude) : null;
+      const parsedLng = formData.longitude ? Number(formData.longitude) : null;
+
       const payload = {
         ...formData,
         role,
         farmSize: Number(formData.farmSize) || 5,
-        latitude: Number(formData.latitude) || 26.2183,
-        longitude: Number(formData.longitude) || 78.1828,
+        latitude: parsedLat,
+        longitude: parsedLng,
       };
 
       await register(payload);
@@ -164,8 +167,8 @@ export default function RegisterPage() {
         district: formData.district,
         state: formData.state,
         village: formData.village,
-        latitude: Number(formData.latitude) || 26.2183,
-        longitude: Number(formData.longitude) || 78.1828,
+        latitude: parsedLat,
+        longitude: parsedLng,
         country: 'India',
       });
 

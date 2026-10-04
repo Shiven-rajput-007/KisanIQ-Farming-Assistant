@@ -99,13 +99,14 @@ export class MandiService {
   private districtIdMap = new Map<number, string>();
   private districtNameMap = new Map<string, number>();
   private marketIdMap = new Map<number, string>();
+  private marketNameMap = new Map<string, number>();
 
   constructor() {
     this.seedStandardLookups();
   }
 
   /**
-   * Pre-populate standard Agmarknet census IDs for rapid resolution
+   * Pre-populate standard Agmarknet census IDs for rapid initial resolution
    */
   private seedStandardLookups() {
     // Standard commodities
@@ -120,23 +121,45 @@ export class MandiService {
       [8, 'Onion'],
       [9, 'Potato'],
       [10, 'Tomato'],
+      [11, 'Barley (Jau)'],
+      [12, 'Bajra(Pearl Millet/Cumbu)'],
+      [13, 'Jowar(Sorghum)'],
+      [14, 'Arhar (Tur/Red Gram)(Whole)'],
+      [15, 'Moong(Green Gram)(Whole)'],
+      [16, 'Urad (Black Gram)(Whole)'],
+      [17, 'Groundnut'],
+      [18, 'Sunflower'],
+      [19, 'Sugarcane'],
+      [20, 'Garlic'],
     ];
     for (const [id, name] of standardCommodities) {
       this.commodityIdMap.set(id, name);
       this.commodityNameMap.set(name.toLowerCase(), id);
     }
 
-    // Key agricultural states
+    // Key agricultural states (Census 2011 State IDs)
     const standardStates: Array<[number, string]> = [
+      [1, 'Jammu and Kashmir'],
+      [2, 'Himachal Pradesh'],
       [3, 'Punjab'],
+      [4, 'Chandigarh'],
+      [5, 'Uttarakhand'],
       [6, 'Haryana'],
+      [7, 'NCT of Delhi'],
       [8, 'Rajasthan'],
       [9, 'Uttar Pradesh'],
+      [10, 'Bihar'],
+      [19, 'West Bengal'],
+      [21, 'Odisha'],
+      [22, 'Chhattisgarh'],
       [23, 'Madhya Pradesh'],
       [24, 'Gujarat'],
       [27, 'Maharashtra'],
       [28, 'Andhra Pradesh'],
       [29, 'Karnataka'],
+      [32, 'Kerala'],
+      [33, 'Tamil Nadu'],
+      [36, 'Telangana'],
     ];
     for (const [id, name] of standardStates) {
       this.stateIdMap.set(id, name);
@@ -197,6 +220,7 @@ export class MandiService {
 
   /**
    * Validates and normalizes records from CEDA Agmarknet
+   * Rejects incomplete, synthetic, or out-of-bounds records
    */
   public validateAndNormalize(raw: AgmarknetRecord): NormalizedMandiRecord | null {
     if (!raw) return null;
@@ -225,10 +249,10 @@ export class MandiService {
       commodity = this.commodityIdMap.get(raw.commodity_id)!;
     }
 
-    const variety = (raw.variety || 'Other').trim();
+    const variety = (raw.variety || 'Standard').trim();
     const grade = (raw.grade || 'FAQ').trim();
 
-    // Reject incomplete records
+    // Reject incomplete records that lack verifiable identity
     if (!state || !marketName || !commodity) {
       return null;
     }
@@ -296,7 +320,7 @@ export class MandiService {
   public async fetchCedaCommodities(): Promise<CedaCommodity[]> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('CEDA_API_KEY is not configured.');
+      throw new Error('CEDA_API_KEY is not configured in backend environment variables.');
     }
 
     const url = `${this.getBaseUrl()}/agmarknet/commodities`;
@@ -328,7 +352,7 @@ export class MandiService {
   public async fetchCedaGeographies(commodityId?: number): Promise<CedaGeography[]> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('CEDA_API_KEY is not configured.');
+      throw new Error('CEDA_API_KEY is not configured in backend environment variables.');
     }
 
     let url = `${this.getBaseUrl()}/agmarknet/geographies`;
@@ -375,7 +399,7 @@ export class MandiService {
   ): Promise<CedaMarket[]> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('CEDA_API_KEY is not configured.');
+      throw new Error('CEDA_API_KEY is not configured in backend environment variables.');
     }
 
     const url = `${this.getBaseUrl()}/agmarknet/markets`;
@@ -403,6 +427,7 @@ export class MandiService {
     const data: CedaMarket[] = json?.data || [];
     for (const m of data) {
       this.marketIdMap.set(m.market_id, m.market_name);
+      this.marketNameMap.set(m.market_name.toLowerCase(), m.market_id);
     }
     return data;
   }
@@ -421,7 +446,7 @@ export class MandiService {
   }): Promise<any[]> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('CEDA_API_KEY is not configured.');
+      throw new Error('CEDA_API_KEY is not configured in backend environment variables.');
     }
 
     const url = `${this.getBaseUrl()}/agmarknet/prices`;
@@ -471,7 +496,7 @@ export class MandiService {
   }): Promise<any[]> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      throw new Error('CEDA_API_KEY is not configured.');
+      throw new Error('CEDA_API_KEY is not configured in backend environment variables.');
     }
 
     const url = `${this.getBaseUrl()}/agmarknet/quantities`;
@@ -505,6 +530,106 @@ export class MandiService {
 
     const json: any = await response.json();
     return json?.data || [];
+  }
+
+  /**
+   * Resolve market_id to market_name, querying CEDA markets or database if not cached
+   */
+  public async resolveMarketName(
+    marketId: number,
+    commodityId?: number,
+    stateId?: number,
+    districtId?: number
+  ): Promise<string | null> {
+    if (this.marketIdMap.has(marketId)) {
+      return this.marketIdMap.get(marketId)!;
+    }
+
+    // If district and commodity are known, query CEDA /agmarknet/markets
+    if (commodityId && stateId && districtId && this.isConfigured()) {
+      try {
+        await this.fetchCedaMarkets(commodityId, stateId, districtId);
+        if (this.marketIdMap.has(marketId)) {
+          return this.marketIdMap.get(marketId)!;
+        }
+      } catch (err) {
+        console.warn(`[MandiService] Markets fetch notice for district ${districtId}:`, (err as any).message);
+      }
+    }
+
+    // Check PostgreSQL markets table for existing record
+    try {
+      const res = await db.query('SELECT name FROM markets WHERE id = $1 LIMIT 1', [String(marketId)]);
+      if (res.rows.length > 0) {
+        const name = res.rows[0].name;
+        this.marketIdMap.set(marketId, name);
+        return name;
+      }
+    } catch (dbErr) {
+      console.warn('[MandiService] DB market lookup notice:', dbErr);
+    }
+
+    return null;
+  }
+
+  /**
+   * Resolve state_id to state_name
+   */
+  public async resolveStateName(stateId: number): Promise<string | null> {
+    if (this.stateIdMap.has(stateId)) {
+      return this.stateIdMap.get(stateId)!;
+    }
+    if (this.isConfigured()) {
+      try {
+        await this.fetchCedaGeographies();
+        if (this.stateIdMap.has(stateId)) {
+          return this.stateIdMap.get(stateId)!;
+        }
+      } catch (e) {
+        console.warn('[MandiService] Geographies fetch notice:', (e as any).message);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Resolve district_id to district_name
+   */
+  public async resolveDistrictName(districtId: number, commodityId?: number): Promise<string | null> {
+    if (this.districtIdMap.has(districtId)) {
+      return this.districtIdMap.get(districtId)!;
+    }
+    if (this.isConfigured()) {
+      try {
+        await this.fetchCedaGeographies(commodityId);
+        if (this.districtIdMap.has(districtId)) {
+          return this.districtIdMap.get(districtId)!;
+        }
+      } catch (e) {
+        console.warn('[MandiService] Geographies fetch notice:', (e as any).message);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Resolve commodity_id to commodity_name
+   */
+  public async resolveCommodityName(commodityId: number): Promise<string | null> {
+    if (this.commodityIdMap.has(commodityId)) {
+      return this.commodityIdMap.get(commodityId)!;
+    }
+    if (this.isConfigured()) {
+      try {
+        await this.fetchCedaCommodities();
+        if (this.commodityIdMap.has(commodityId)) {
+          return this.commodityIdMap.get(commodityId)!;
+        }
+      } catch (e) {
+        console.warn('[MandiService] Commodities fetch notice:', (e as any).message);
+      }
+    }
+    return null;
   }
 
   /**
@@ -661,11 +786,11 @@ export class MandiService {
         await this.fetchCedaCommodities();
         await this.fetchCedaGeographies();
       } catch (e: any) {
-        console.warn('[MandiSync] Lookups refresh encountered notice:', e.message);
+        console.warn('[MandiSync] Lookups refresh notice:', e.message);
       }
 
       // Resolve Commodity ID
-      let commodityId = 1; // Default: Wheat
+      let commodityId = 1; // Default: Wheat (ID 1 in CEDA Agmarknet)
       if (options?.commodity) {
         const cLower = options.commodity.toLowerCase().trim();
         if (this.commodityNameMap.has(cLower)) {
@@ -688,6 +813,17 @@ export class MandiService {
         const dLower = options.district.toLowerCase().trim();
         if (this.districtNameMap.has(dLower)) {
           districtIds = [this.districtNameMap.get(dLower)!];
+        }
+      }
+
+      // Pre-fetch markets if state and district are known
+      if (stateId > 0 && districtIds && districtIds.length > 0) {
+        for (const distId of districtIds) {
+          try {
+            await this.fetchCedaMarkets(commodityId, stateId, distId, 'price');
+          } catch (mErr: any) {
+            console.warn(`[MandiSync] Markets lookup notice for district ${distId}:`, mErr.message);
+          }
         }
       }
 
@@ -727,26 +863,51 @@ export class MandiService {
         quantityMap.set(key, Number(q.quantity) || 0);
       }
 
-      // Map raw CEDA records to AgmarknetRecord format
-      const formattedRecords: AgmarknetRecord[] = priceRecords.map((r: any) => {
+      // Resolve every raw CEDA record through the identity pipeline
+      const formattedRecords: AgmarknetRecord[] = [];
+      for (const r of priceRecords) {
         const qKey = `${r.market_id}_${r.date}`;
-        return {
+        const recCommodityId = r.commodity_id || commodityId;
+        const recStateId = r.census_state_id || stateId;
+        const recDistrictId = r.census_district_id || (districtIds ? districtIds[0] : undefined);
+        const recMarketId = r.market_id;
+
+        // Resolve names
+        const marketName = await this.resolveMarketName(recMarketId, recCommodityId, recStateId, recDistrictId);
+        const stateName = await this.resolveStateName(recStateId);
+        const districtName = recDistrictId ? await this.resolveDistrictName(recDistrictId, recCommodityId) : stateName;
+        const commodityName = await this.resolveCommodityName(recCommodityId);
+
+        if (!marketName || !stateName || !commodityName) {
+          console.warn(`[MandiSync] Unresolved CEDA record: market_id=${recMarketId}, state_id=${recStateId}, commodity_id=${recCommodityId}. Rejecting.`);
+          rejectedCount++;
+          continue;
+        }
+
+        formattedRecords.push({
           arrival_date: r.date,
-          commodity_id: r.commodity_id || commodityId,
-          census_state_id: r.census_state_id || stateId,
-          census_district_id: r.census_district_id,
-          market_id: r.market_id,
+          state: stateName,
+          census_state_id: recStateId,
+          district: districtName || stateName,
+          census_district_id: recDistrictId,
+          market: marketName,
+          market_name: marketName,
+          market_id: recMarketId,
+          commodity: commodityName,
+          commodity_id: recCommodityId,
+          variety: r.variety || 'Standard',
+          grade: r.grade || 'FAQ',
           min_price: r.min_price,
           max_price: r.max_price,
           modal_price: r.modal_price,
           quantity: quantityMap.get(qKey),
-        };
-      });
+        });
+      }
 
       const ingestStats = await this.ingestRecords(formattedRecords);
       insertedCount = ingestStats.insertedCount;
       updatedCount = ingestStats.updatedCount;
-      rejectedCount = ingestStats.rejectedCount;
+      rejectedCount += ingestStats.rejectedCount;
 
       const completedAt = new Date().toISOString();
       await db.query(
@@ -800,6 +961,7 @@ export class MandiService {
 
   /**
    * Retrieves verified APMC market prices with server-side filtering & pagination
+   * No synthetic fallback names
    */
   public async getPrices(options: MandiFilterOptions): Promise<{
     records: any[];
@@ -867,14 +1029,14 @@ export class MandiService {
 
     // Records query
     const recordsRes = await db.query(
-      `SELECT id, state, district, COALESCE(market_name, 'APMC Mandi') as market,
-              COALESCE(commodity, crop_name, 'Wheat') as commodity,
-              COALESCE(variety, 'Standard') as variety,
-              COALESCE(grade, 'FAQ') as grade,
+      `SELECT id, state, district, market_name as market,
+              COALESCE(commodity, crop_name) as commodity,
+              variety,
+              grade,
               arrival_date,
-              COALESCE(min_price, modal_price, price_per_quintal) as min_price,
-              COALESCE(max_price, modal_price, price_per_quintal) as max_price,
-              COALESCE(modal_price, price_per_quintal) as modal_price,
+              min_price,
+              max_price,
+              modal_price,
               quantity,
               source, fetched_at, updated_at
        FROM market_prices
@@ -901,12 +1063,12 @@ export class MandiService {
     return {
       records: recordsRes.rows.map(r => ({
         id: r.id,
-        state: r.state || 'Madhya Pradesh',
-        district: r.district || 'Gwalior',
-        market: r.market,
-        commodity: r.commodity,
-        variety: r.variety,
-        grade: r.grade,
+        state: r.state || '',
+        district: r.district || '',
+        market: r.market || 'APMC Mandi',
+        commodity: r.commodity || '',
+        variety: r.variety || 'Standard',
+        grade: r.grade || 'FAQ',
         arrivalDate: r.arrival_date ? new Date(r.arrival_date).toISOString().split('T')[0] : null,
         minPrice: Number(r.min_price),
         maxPrice: Number(r.max_price),
@@ -1006,10 +1168,12 @@ export class MandiService {
     let transportCost = 0;
     if (input.manualTransportCost !== undefined && input.manualTransportCost >= 0) {
       transportCost = Math.round(input.manualTransportCost);
+    } else if (input.distanceKm !== undefined && input.distanceKm > 0) {
+      const dist = Number(input.distanceKm);
+      // Realistic freight logistics: base ₹300 + ₹25/km per 50 quintals
+      transportCost = Math.max(300, Math.round(dist * 25 * (qty / 50)));
     } else {
-      const dist = Math.max(0, Number(input.distanceKm) || 0);
-      // Realistic tractor-trolley freight: base ₹300 + ₹25 per km per 50 quintals
-      transportCost = dist === 0 ? 0 : Math.max(300, Math.round(dist * 25 * (qty / 50)));
+      transportCost = 0;
     }
 
     const commissionRate = Math.max(0, Number(input.commissionPercent ?? 2.5));

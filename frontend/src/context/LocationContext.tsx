@@ -9,18 +9,20 @@ export interface ActiveLocation {
   city?: string;
   village?: string;
   address?: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
+  isConfigured: boolean;
 }
 
-export const DEFAULT_LOCATION: ActiveLocation = {
+export const UNCONFIGURED_LOCATION: ActiveLocation = {
   country: 'India',
-  state: 'Madhya Pradesh',
-  district: 'Gwalior',
-  city: 'Gwalior',
-  village: 'Morar',
-  latitude: 26.2183,
-  longitude: 78.1828,
+  state: '',
+  district: '',
+  city: '',
+  village: '',
+  latitude: null,
+  longitude: null,
+  isConfigured: false,
 };
 
 interface LocationContextType {
@@ -38,33 +40,54 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize from Auth user location, or localStorage, or default
+  // Initialize from localStorage if explicitly set, or unconfigured
   const [location, setLocationState] = useState<ActiveLocation>(() => {
     const cached = localStorage.getItem('kisaniq_active_location');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        if (parsed.latitude && parsed.longitude && parsed.district) {
-          return { ...DEFAULT_LOCATION, ...parsed };
+        if (
+          parsed.latitude != null &&
+          parsed.longitude != null &&
+          !isNaN(Number(parsed.latitude)) &&
+          !isNaN(Number(parsed.longitude)) &&
+          parsed.district
+        ) {
+          return {
+            ...UNCONFIGURED_LOCATION,
+            ...parsed,
+            latitude: Number(parsed.latitude),
+            longitude: Number(parsed.longitude),
+            isConfigured: true,
+          };
         }
       } catch (e) {
         console.warn('Failed to parse cached location:', e);
       }
     }
-    return DEFAULT_LOCATION;
+    return UNCONFIGURED_LOCATION;
   });
 
   // Keep synchronized with authenticated farmer profile
   useEffect(() => {
     const coords = farmer?.location?.coordinates;
-    if (coords && coords.lat != null && coords.lng != null) {
+    if (
+      coords &&
+      coords.lat != null &&
+      coords.lng != null &&
+      !isNaN(Number(coords.lat)) &&
+      !isNaN(Number(coords.lng))
+    ) {
+      const lat = Number(coords.lat);
+      const lng = Number(coords.lng);
       setLocationState((prev) => ({
         ...prev,
         district: farmer?.location?.district || prev.district,
         state: farmer?.location?.state || prev.state,
         village: farmer?.location?.village || prev.village,
-        latitude: Number(coords.lat),
-        longitude: Number(coords.lng),
+        latitude: lat,
+        longitude: lng,
+        isConfigured: true,
       }));
     }
   }, [farmer]);
@@ -74,25 +97,31 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
+        const lat = newLoc.latitude !== undefined && newLoc.latitude !== null ? Number(newLoc.latitude) : location.latitude;
+        const lon = newLoc.longitude !== undefined && newLoc.longitude !== null ? Number(newLoc.longitude) : location.longitude;
+        const isConfigured = lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon);
+
         const updated: ActiveLocation = {
           ...location,
           ...newLoc,
           country: 'India',
-          latitude: newLoc.latitude !== undefined ? Number(newLoc.latitude) : location.latitude,
-          longitude: newLoc.longitude !== undefined ? Number(newLoc.longitude) : location.longitude,
+          latitude: lat,
+          longitude: lon,
           district: newLoc.district || location.district,
           state: newLoc.state || location.state,
+          village: newLoc.village || location.village,
+          isConfigured,
         };
 
         setLocationState(updated);
         localStorage.setItem('kisaniq_active_location', JSON.stringify(updated));
 
         // Save to backend database if authenticated
-        if (saveToBackend && isAuthenticated) {
+        if (saveToBackend && isAuthenticated && isConfigured) {
           try {
             await farmerApi.updateLocation({
-              latitude: updated.latitude,
-              longitude: updated.longitude,
+              latitude: updated.latitude!,
+              longitude: updated.longitude!,
               district: updated.district,
               state: updated.state,
               village: updated.village,
@@ -127,8 +156,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
 
-          let detectedDistrict = location.district;
-          let detectedState = location.state;
+          let detectedDistrict = location.district || 'India';
+          let detectedState = location.state || '';
           let detectedVillage = location.village || '';
 
           // Reverse geocode via free public OSM Nominatim
@@ -137,7 +166,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`,
               {
                 headers: { 'User-Agent': 'KisanIQ-FullStack/2.0' },
-                signal: AbortSignal.timeout(4000),
+                signal: AbortSignal.timeout(6000),
               }
             );
             if (res.ok) {
@@ -150,34 +179,30 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
               }
             }
           } catch (geoErr) {
-            console.warn('Reverse geocode fallback:', geoErr);
+            console.warn('Reverse geocoding notice:', geoErr);
           }
 
-          const resolved: ActiveLocation = {
+          const newLoc: ActiveLocation = {
             country: 'India',
             state: detectedState,
             district: detectedDistrict,
             village: detectedVillage,
             latitude: lat,
             longitude: lng,
+            isConfigured: true,
           };
 
-          await setLocation(resolved, true);
+          await setLocation(newLoc, true);
           setIsLoading(false);
-          resolve(resolved);
+          resolve(newLoc);
         },
-        (err) => {
+        (posErr) => {
           setIsLoading(false);
-          const errMsg =
-            err.code === 1
-              ? 'Location permission was denied. Please select your district from the list.'
-              : err.code === 2
-              ? 'GPS position is currently unavailable. Please select your district from the list.'
-              : 'GPS detection timed out. Please select your district from the list.';
+          const errMsg = posErr.message || 'GPS location detection failed';
           setError(errMsg);
           reject(new Error(errMsg));
         },
-        { timeout: 10000, enableHighAccuracy: true, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
     });
   }, [location, setLocation]);

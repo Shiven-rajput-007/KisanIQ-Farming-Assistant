@@ -105,10 +105,14 @@ export const soilApi = {
       `/soil/requests/${id}/status`,
       { status, notes }
     ),
-  getLatestReport: (farmerId: string = 'farmer_ramesh') =>
-    api.get<{ success: boolean; report: SoilReport | null }>(`/soil/reports/latest/${farmerId}`),
-  getReportsHistory: (farmerId: string = 'farmer_ramesh') =>
-    api.get<{ success: boolean; reports: SoilReport[] }>(`/soil/reports/history/${farmerId}`),
+  getLatestReport: (farmerId?: string) =>
+    api.get<{ success: boolean; report: SoilReport | null }>(
+      farmerId ? `/soil/reports/latest/${farmerId}` : `/soil/reports/latest`
+    ),
+  getReportsHistory: (farmerId?: string) =>
+    api.get<{ success: boolean; reports: SoilReport[] }>(
+      farmerId ? `/soil/reports/history/${farmerId}` : `/soil/reports/history`
+    ),
   getSensorReading: (fieldId: string = 'field_1') =>
     api.get<{ success: boolean; reading: any; sensor?: any }>(`/soil/sensors/latest/${fieldId}`),
 };

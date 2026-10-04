@@ -216,21 +216,21 @@ export class AssistantService {
         const tomorrow = forecast[1] || forecast[0] || { rainProbability: 10, high: 32, low: 18, conditions: 'Partly Cloudy' };
 
         if (entities.timeframe === 'tomorrow') {
-          if (tomorrow.rainProbability >= 40) {
+          if ((tomorrow.rainProbability ?? 0) >= 40) {
             if (isMarathi) {
-              reply = `उद्या ${targetDistrict} मध्ये पावसाची **${tomorrow.rainProbability}% शक्यता** आहे (कमाल: ${tomorrow.high}°C, किमान: ${tomorrow.low}°C). हवामान पाहता उद्या पिकाला पाणी देणे टाळा आणि शेतातून पाण्याचा योग्य निचरा ठेवा.`;
+              reply = `उद्या ${targetDistrict} मध्ये पावसाची **${tomorrow.rainProbability ?? 0}% शक्यता** आहे (कमाल: ${tomorrow.high ?? 32}°C, किमान: ${tomorrow.low ?? 20}°C). हवामान पाहता उद्या पिकाला पाणी देणे टाळा आणि शेतातून पाण्याचा योग्य निचरा ठेवा.`;
             } else if (isHindi) {
-              reply = `कल ${targetDistrict} में बारिश की **${tomorrow.rainProbability}% संभावना** है (तापमान ${tomorrow.high}°C / ${tomorrow.low}°C)। मौसम को देखते हुए कल तक सिंचाई टालें और जल निकासी दुरुस्त रखें।`;
+              reply = `कल ${targetDistrict} में बारिश की **${tomorrow.rainProbability ?? 0}% संभावना** है (तापमान ${tomorrow.high ?? 32}°C / ${tomorrow.low ?? 20}°C)। मौसम को देखते हुए कल तक सिंचाई टालें और जल निकासी दुरुस्त रखें।`;
             } else {
-              reply = `Tomorrow in ${targetDistrict}, there is a **${tomorrow.rainProbability}% chance of rain** (High: ${tomorrow.high}°C, Low: ${tomorrow.low}°C). We recommend postponing irrigation and ensuring field drainage.`;
+              reply = `Tomorrow in ${targetDistrict}, there is a **${tomorrow.rainProbability ?? 0}% chance of rain** (High: ${tomorrow.high ?? 32}°C, Low: ${tomorrow.low ?? 20}°C). We recommend postponing irrigation and ensuring field drainage.`;
             }
           } else {
             if (isMarathi) {
-              reply = `उद्या ${targetDistrict} मध्ये हवामान प्रामुख्याने स्वच्छ राहील. पावसाची शक्यता केवळ **${tomorrow.rainProbability}%** आहे. कमाल तापमान ${tomorrow.high}°C आणि किमान ${tomorrow.low}°C राहण्याचा अंदाज आहे.`;
+              reply = `उद्या ${targetDistrict} मध्ये हवामान प्रामुख्याने स्वच्छ राहील. पावसाची शक्यता केवळ **${tomorrow.rainProbability ?? 0}%** आहे. कमाल तापमान ${tomorrow.high ?? 32}°C आणि किमान ${tomorrow.low ?? 20}°C राहण्याचा अंदाज आहे.`;
             } else if (isHindi) {
-              reply = `कल ${targetDistrict} में मौसम मुख्य रूप से साफ रहेगा। बारिश की संभावना केवल **${tomorrow.rainProbability}%** है। अधिकतम तापमान ${tomorrow.high}°C और न्यूनतम ${tomorrow.low}°C रहेगा।`;
+              reply = `कल ${targetDistrict} में मौसम मुख्य रूप से साफ रहेगा। बारिश की संभावना केवल **${tomorrow.rainProbability ?? 0}%** है। अधिकतम तापमान ${tomorrow.high ?? 32}°C और न्यूनतम ${tomorrow.low ?? 20}°C रहेगा।`;
             } else {
-              reply = `Tomorrow in ${targetDistrict}, the weather will be mostly clear with only **${tomorrow.rainProbability}% chance of rain**. High will be around ${tomorrow.high}°C and low around ${tomorrow.low}°C.`;
+              reply = `Tomorrow in ${targetDistrict}, the weather will be mostly clear with only **${tomorrow.rainProbability ?? 0}% chance of rain**. High will be around ${tomorrow.high ?? 32}°C and low around ${tomorrow.low ?? 20}°C.`;
             }
           }
         } else if (entities.timeframe === 'forecast') {
@@ -360,13 +360,13 @@ export class AssistantService {
       case 'IRRIGATION_ADVICE': {
         const weather = await weatherService.getWeather(targetLat, targetLon);
         const tomorrow = weather.forecast[1] || weather.forecast[0];
-        if (tomorrow && tomorrow.rainProbability >= 40) {
+        if (tomorrow && (tomorrow.rainProbability ?? 0) >= 40) {
           if (isMarathi) {
-            reply = `आज शेतात पाणी देऊ नका. उद्या ${targetDistrict} मध्ये **${tomorrow.rainProbability}% पावसाची शक्यता** आहे. ${farmerCrop.name} पिकाच्या सध्याच्या ${farmerCrop.current_stage} अवस्थेत अतिरिक्त पाण्याने मुळे कुजण्याचा धोका संभवतो.`;
+            reply = `आज शेतात पाणी देऊ नका. उद्या ${targetDistrict} मध्ये **${tomorrow.rainProbability ?? 0}% पावसाची शक्यता** आहे. ${farmerCrop.name} पिकाच्या सध्याच्या ${farmerCrop.current_stage} अवस्थेत अतिरिक्त पाण्याने मुळे कुजण्याचा धोका संभवतो.`;
           } else if (isHindi) {
-            reply = `आज फसल में पानी न दें। कल ${targetDistrict} में **${tomorrow.rainProbability}% बारिश** की संभावना है। फसल (${farmerCrop.name}) की वर्तमान ${farmerCrop.current_stage} अवस्था में अधिक पानी से जड़ सड़न हो सकती है।`;
+            reply = `आज फसल में पानी न दें। कल ${targetDistrict} में **${tomorrow.rainProbability ?? 0}% बारिश** की संभावना है। फसल (${farmerCrop.name}) की वर्तमान ${farmerCrop.current_stage} अवस्था में अधिक पानी से जड़ सड़न हो सकती है।`;
           } else {
-            reply = `Do not irrigate today. Rain probability tomorrow in ${targetDistrict} is **${tomorrow.rainProbability}%**. Over-watering during the ${farmerCrop.current_stage} stage of ${farmerCrop.name} can risk root disease.`;
+            reply = `Do not irrigate today. Rain probability tomorrow in ${targetDistrict} is **${tomorrow.rainProbability ?? 0}%**. Over-watering during the ${farmerCrop.current_stage} stage of ${farmerCrop.name} can risk root disease.`;
           }
         } else {
           if (isMarathi) {
@@ -628,6 +628,9 @@ export class AssistantService {
       }
 
       case 'CREATE_LISTING': {
+        if (!farmerId || farmerId === 'guest_user') {
+          throw new Error('Authentication required to create a crop listing.');
+        }
         const id = `lst_${Date.now()}`;
         const { cropName, variety, quantityQuintals, pricePerQuintal, qualityGrade, location, description } = payload;
         await db.query(
@@ -635,7 +638,7 @@ export class AssistantService {
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active')`,
           [
             id,
-            farmerId === 'guest_user' ? 'farmer_ramesh' : farmerId,
+            farmerId,
             cropName,
             variety || 'Certified',
             Number(quantityQuintals),
@@ -657,9 +660,10 @@ export class AssistantService {
     }
   }
 
-  async getHistory(farmerId: string = 'farmer_ramesh') {
+  async getHistory(farmerId?: string) {
+    if (!farmerId || farmerId === 'guest_user') return [];
     const res = await db.query(
-      `SELECT * FROM chat_messages WHERE farmer_id = $1 OR farmer_id IS NULL ORDER BY created_at ASC LIMIT 50`,
+      `SELECT * FROM chat_messages WHERE farmer_id = $1 ORDER BY created_at ASC LIMIT 50`,
       [farmerId]
     );
     return res.rows;

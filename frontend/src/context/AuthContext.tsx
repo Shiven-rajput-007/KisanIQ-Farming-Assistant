@@ -79,10 +79,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           district: loc.district ?? prev.location?.district,
           state: loc.state ?? prev.location?.state,
           pincode: loc.pincode ?? prev.location?.pincode,
-          coordinates: {
-            lat: loc.latitude ?? prev.location?.coordinates?.lat ?? 26.2183,
-            lng: loc.longitude ?? prev.location?.coordinates?.lng ?? 78.1828,
-          },
+          coordinates:
+            loc.latitude !== undefined && loc.latitude !== null && loc.longitude !== undefined && loc.longitude !== null
+              ? { lat: Number(loc.latitude), lng: Number(loc.longitude) }
+              : prev.location?.coordinates,
         },
       };
     });

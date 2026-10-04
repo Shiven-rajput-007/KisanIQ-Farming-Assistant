@@ -22,11 +22,13 @@ import { MarketCard } from '@/components/domain/market-card';
 import { PartialSellingCard } from '@/components/domain/partial-selling-card';
 import { WhyExplanation } from '@/components/domain/why-explanation';
 import { useMarket } from '@/hooks/useMarket';
+import { useActiveLocation } from '@/context/LocationContext';
 import { useOrders } from '@/hooks/useOrders';
 import { marketApi, listingsApi, marketplaceApi, type CropListing, type MarketplaceOrder } from '@/api';
 
 export default function MarketPage() {
   const { t } = useTranslation('market');
+  const { location } = useActiveLocation();
   const [selectedCrop, setSelectedCrop] = useState('Wheat');
   const [selectedQuantity, setSelectedQuantity] = useState(100);
   const { data, isLoading, error, refetch } = useMarket(selectedCrop, selectedQuantity);
@@ -266,7 +268,7 @@ export default function MarketPage() {
             <div className="flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-agri-forest-700" />
               <span>
-                शेतकऱ्याचे स्थान (GPS): {userCoordinates ? `${userCoordinates.lat.toFixed(4)}, ${userCoordinates.lon.toFixed(4)}` : 'Gwalior, MP'}
+                शेतकऱ्याचे स्थान: {location.district && location.state ? `${location.district}, ${location.state}` : (userCoordinates ? `${userCoordinates.lat.toFixed(4)}, ${userCoordinates.lon.toFixed(4)}` : 'स्थान निवडलेले नाही')}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -295,13 +297,15 @@ export default function MarketPage() {
           </Card>
 
           {/* Partial Selling Recommendation */}
-          <PartialSellingCard
-            data={partialSelling}
-            onSeeCalculation={() => {
-              const m = markets.find(item => item.id === partialSelling.sellNow.marketId) || markets[0];
-              setSellingModal({ market: m, quantity: partialSelling.sellNow.quantity });
-            }}
-          />
+          {partialSelling && markets && markets.length > 0 && (
+            <PartialSellingCard
+              data={partialSelling}
+              onSeeCalculation={() => {
+                const m = markets.find(item => item.id === partialSelling.sellNow.marketId) || markets[0];
+                setSellingModal({ market: m, quantity: partialSelling.sellNow.quantity });
+              }}
+            />
+          )}
 
           {/* Quick Sell Modal / Action Box */}
           {sellingModal && (
@@ -355,24 +359,43 @@ export default function MarketPage() {
           {/* Market Comparison */}
           <div>
             <SectionHeader title={t('comparison.title')} icon={<span>📊</span>} />
-            <div className="space-y-3">
-              {markets.map((market, index) => (
-                <div key={market.id}>
-                  <MarketCard
-                    market={market}
-                    rank={index + 1}
-                    onWhyClick={() => setShowWhy(showWhy === market.id ? null : market.id)}
-                    onClick={() => setSellingModal({ market, quantity: 50 })}
-                  />
-                  {showWhy === market.id && (
-                    <WhyExplanation
-                      explanation={whyExplanation}
-                      className="mt-2 animate-in slide-in-from-top-2"
+            {markets && markets.length > 0 ? (
+              <div className="space-y-3">
+                {markets.map((market, index) => (
+                  <div key={market.id}>
+                    <MarketCard
+                      market={market}
+                      rank={index + 1}
+                      onWhyClick={() => setShowWhy(showWhy === market.id ? null : market.id)}
+                      onClick={() => setSellingModal({ market, quantity: 50 })}
                     />
-                  )}
+                    {showWhy === market.id && (
+                      <WhyExplanation
+                        explanation={whyExplanation}
+                        className="mt-2 animate-in slide-in-from-top-2"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center bg-sand-50 border border-sand-200 rounded-xl my-4">
+                <div className="w-14 h-14 rounded-full bg-agri-gold-100 flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl">🌾</span>
                 </div>
-              ))}
-            </div>
+                <h3 className="text-base font-bold text-sand-900 mb-1">
+                  या निवडीसाठी कोणताही अधिकृत बाजार भाव उपलब्ध नाही
+                </h3>
+                <p className="text-xs text-sand-600 max-w-md mx-auto mb-4">
+                  CEDA Agmarknet कडून निवडलेल्या पिकासाठी ({selectedCrop}) सध्या कोणतेही अधिकृत आवक दर उपलब्ध नाहीत.
+                </p>
+                <div className="flex justify-center">
+                  <Button variant="secondary" size="sm" onClick={() => refetch()}>
+                    पुन्हा तपासा (Retry)
+                  </Button>
+                </div>
+              </Card>
+            )}
           </div>
         </>
       ) : (

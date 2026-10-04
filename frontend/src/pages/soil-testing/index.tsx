@@ -33,7 +33,7 @@ type TabType = 'overview' | 'request' | 'tracking' | 'labs' | 'history';
 export default function SoilTestingPage() {
   const { t } = useTranslation('soil');
   const { farmer } = useAuth();
-  const farmerId = farmer?.id || 'farmer_ramesh';
+  const farmerId = farmer?.id;
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [report, setReport] = useState<SoilReport | null>(null);

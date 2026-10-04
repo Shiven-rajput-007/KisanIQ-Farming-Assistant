@@ -26,7 +26,9 @@ router.get('/requests/:id', optionalAuth, getRequestById);
 router.put('/requests/:id/status', optionalAuth, updateRequestStatus);
 
 // Soil reports
+router.get('/reports/latest', optionalAuth, getLatestReport);
 router.get('/reports/latest/:farmerId', optionalAuth, getLatestReport);
+router.get('/reports/history', optionalAuth, getReportsHistory);
 router.get('/reports/history/:farmerId', optionalAuth, getReportsHistory);
 
 // Sensor reading (IoT mode - DEMO)

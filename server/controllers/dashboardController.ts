@@ -25,34 +25,48 @@ export async function getDashboard(req: AuthRequest, res: Response): Promise<voi
     }
 
     // 2. Resolve active coordinates: Query parameter overrides stored coordinates
-    let lat: number | undefined = req.query.lat ? Number(req.query.lat) : undefined;
-    let lon: number | undefined = (req.query.lon || req.query.lng) ? Number(req.query.lon || req.query.lng) : undefined;
+    let lat: number | undefined = req.query.lat !== undefined ? Number(req.query.lat) : undefined;
+    let lon: number | undefined =
+      req.query.lon !== undefined
+        ? Number(req.query.lon)
+        : req.query.lng !== undefined
+        ? Number(req.query.lng)
+        : undefined;
 
     if (farmer) {
-      if (lat === undefined || isNaN(lat)) lat = Number(farmer.latitude) || 26.2183;
-      if (lon === undefined || isNaN(lon)) lon = Number(farmer.longitude) || 78.1828;
+      if ((lat === undefined || isNaN(lat)) && farmer.latitude !== null && farmer.latitude !== undefined) {
+        lat = Number(farmer.latitude);
+      }
+      if ((lon === undefined || isNaN(lon)) && farmer.longitude !== null && farmer.longitude !== undefined) {
+        lon = Number(farmer.longitude);
+      }
     } else {
-      // Guest default
+      // Guest default without synthetic coordinates
       farmer = {
         id: 'guest',
         name: 'Kisan Mitra',
-        district: req.query.district ? String(req.query.district) : 'Gwalior',
-        state: req.query.state ? String(req.query.state) : 'Madhya Pradesh',
-        latitude: lat || 26.2183,
-        longitude: lon || 78.1828,
+        district: req.query.district ? String(req.query.district) : '',
+        state: req.query.state ? String(req.query.state) : '',
+        latitude: lat || null,
+        longitude: lon || null,
       };
-      if (lat === undefined || isNaN(lat)) lat = 26.2183;
-      if (lon === undefined || isNaN(lon)) lon = 78.1828;
       farmerId = 'guest';
     }
+
+    const hasCoords =
+      typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon);
 
     // Fetch weather, recommendations, crops, and alerts
     let weatherData: any = null;
     let weatherUnavailable = false;
-    try {
-      weatherData = await weatherService.getWeather(lat, lon);
-    } catch (wErr: any) {
-      console.warn('[Dashboard] Weather service unavailable:', wErr.message);
+    if (hasCoords) {
+      try {
+        weatherData = await weatherService.getWeather(lat!, lon!);
+      } catch (wErr: any) {
+        console.warn('[Dashboard] Weather service notice:', wErr.message);
+        weatherUnavailable = true;
+      }
+    } else {
       weatherUnavailable = true;
     }
 
@@ -104,8 +118,8 @@ export async function getDashboard(req: AuthRequest, res: Response): Promise<voi
       farmer: {
         id: farmer.id,
         name: farmer.name,
-        location: `${farmer.district}, ${farmer.state || 'Madhya Pradesh'}`,
-        coordinates: { lat, lon },
+        location: farmer.district ? `${farmer.district}${farmer.state ? `, ${farmer.state}` : ''}` : '',
+        coordinates: hasCoords ? { lat: lat!, lon: lon! } : null,
       },
       weather: weatherData ? weatherData.current : null,
       weatherUnavailable,

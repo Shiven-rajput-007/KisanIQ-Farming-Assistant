@@ -162,8 +162,8 @@ export function VoiceAssistantWidget() {
         activeLocation: {
           district: location.district,
           state: location.state,
-          latitude: location.latitude,
-          longitude: location.longitude,
+          latitude: location.latitude ?? undefined,
+          longitude: location.longitude ?? undefined,
         },
         language: voiceLang.split('-')[0],
       });

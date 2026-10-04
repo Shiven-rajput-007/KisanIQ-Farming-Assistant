@@ -152,7 +152,7 @@ export async function getMarketComparison(req: AuthRequest, res: Response): Prom
       district,
       state
     );
-    res.json({ success: true, ...data });
+    res.json(data);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

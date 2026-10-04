@@ -144,8 +144,8 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     // Farmer Registration
     const farmerId = `frm_${Date.now()}`;
-    const farmerLat = latitude !== undefined ? Number(latitude) : 26.2183;
-    const farmerLng = longitude !== undefined ? Number(longitude) : 78.1828;
+    const farmerLat = (latitude !== undefined && latitude !== null && !isNaN(Number(latitude))) ? Number(latitude) : null;
+    const farmerLng = (longitude !== undefined && longitude !== null && !isNaN(Number(longitude))) ? Number(longitude) : null;
 
     // 2. Create Farmer Profile
     await db.query(
@@ -318,10 +318,10 @@ export async function login(req: Request, res: Response): Promise<void> {
         id: `frm_${user.id}`,
         name: user.name,
         phone: user.phone,
-        district: 'Gwalior',
-        state: 'Madhya Pradesh',
-        latitude: 26.2183,
-        longitude: 78.1828,
+        district: '',
+        state: '',
+        latitude: null,
+        longitude: null,
         preferred_language: 'hi',
         profile_complete: true,
       };
@@ -350,8 +350,8 @@ export async function login(req: Request, res: Response): Promise<void> {
           state: farmer.state,
           pincode: farmer.pincode,
           coordinates: {
-            lat: Number(farmer.latitude) || 26.2183,
-            lng: Number(farmer.longitude) || 78.1828,
+            lat: (farmer.latitude !== null && farmer.latitude !== undefined && !isNaN(Number(farmer.latitude))) ? Number(farmer.latitude) : null,
+            lng: (farmer.longitude !== null && farmer.longitude !== undefined && !isNaN(Number(farmer.longitude))) ? Number(farmer.longitude) : null,
           },
         },
         preferredLanguage: farmer.preferred_language,
@@ -422,8 +422,8 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
                 state: farmer.state,
                 pincode: farmer.pincode,
                 coordinates: {
-                  lat: Number(farmer.latitude) || 26.2183,
-                  lng: Number(farmer.longitude) || 78.1828,
+                  lat: (farmer.latitude !== null && farmer.latitude !== undefined && !isNaN(Number(farmer.latitude))) ? Number(farmer.latitude) : null,
+                  lng: (farmer.longitude !== null && farmer.longitude !== undefined && !isNaN(Number(farmer.longitude))) ? Number(farmer.longitude) : null,
                 },
               },
               preferredLanguage: farmer.preferred_language,
@@ -454,8 +454,8 @@ export async function getMe(req: AuthRequest, res: Response): Promise<void> {
               state: farmer.state,
               pincode: farmer.pincode,
               coordinates: {
-                lat: Number(farmer.latitude) || 26.2183,
-                lng: Number(farmer.longitude) || 78.1828,
+                lat: (farmer.latitude !== null && farmer.latitude !== undefined && !isNaN(Number(farmer.latitude))) ? Number(farmer.latitude) : null,
+                lng: (farmer.longitude !== null && farmer.longitude !== undefined && !isNaN(Number(farmer.longitude))) ? Number(farmer.longitude) : null,
               },
             },
             preferredLanguage: farmer.preferred_language,

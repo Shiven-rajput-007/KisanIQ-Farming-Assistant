@@ -37,29 +37,35 @@ export class DecisionEngine {
    * Evaluates real weather, crop state, soil type, and mandi prices to generate actionable, explainable recommendations.
    */
   async generateRecommendations(
-    farmerId: string = 'farmer_ramesh',
+    farmerId?: string,
     overrideLat?: number,
     overrideLon?: number
   ): Promise<Recommendation[]> {
     // 1. Fetch Farmer, Farm and Crop information
-    const farmerRes = await db.query('SELECT * FROM farmers WHERE id = $1', [farmerId]);
-    const farmRes = await db.query('SELECT * FROM farms WHERE farmer_id = $1', [farmerId]);
-    const cropRes = await db.query('SELECT * FROM crops WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 1', [farmerId]);
+    const farmerRes = farmerId ? await db.query('SELECT * FROM farmers WHERE id = $1', [farmerId]) : { rows: [] };
+    const farmRes = farmerId ? await db.query('SELECT * FROM farms WHERE farmer_id = $1', [farmerId]) : { rows: [] };
+    const cropRes = farmerId ? await db.query('SELECT * FROM crops WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 1', [farmerId]) : { rows: [] };
 
-    const farmer = farmerRes.rows[0] || { district: 'Gwalior', latitude: 26.2183, longitude: 78.1828 };
+    const farmer = farmerRes.rows[0] || null;
     const farm = farmRes.rows[0] || { soil_type: 'alluvial', irrigation_source: 'borewell' };
     const hasCrop = cropRes.rows.length > 0;
     const crop = hasCrop ? cropRes.rows[0] : null;
 
-    // 2. Fetch live weather & forecast using active coordinates safely
-    const lat = overrideLat !== undefined && !isNaN(overrideLat) ? overrideLat : (Number(farmer.latitude) || 26.2183);
-    const lon = overrideLon !== undefined && !isNaN(overrideLon) ? overrideLon : (Number(farmer.longitude) || 78.1828);
+    // 2. Fetch live weather & forecast using genuine coordinates
+    const lat = overrideLat !== undefined && !isNaN(overrideLat)
+      ? overrideLat
+      : (farmer?.latitude != null && !isNaN(Number(farmer.latitude)) ? Number(farmer.latitude) : undefined);
+    const lon = overrideLon !== undefined && !isNaN(overrideLon)
+      ? overrideLon
+      : (farmer?.longitude != null && !isNaN(Number(farmer.longitude)) ? Number(farmer.longitude) : undefined);
 
     let weatherData: any = null;
-    try {
-      weatherData = await weatherService.getWeather(lat, lon);
-    } catch (e: any) {
-      console.warn('[DecisionEngine] Weather data unavailable for advisory generation:', e.message);
+    if (lat !== undefined && lon !== undefined) {
+      try {
+        weatherData = await weatherService.getWeather(lat, lon);
+      } catch (e: any) {
+        console.warn('[DecisionEngine] Weather data unavailable for advisory generation:', e.message);
+      }
     }
 
     const recommendations: Recommendation[] = [];

@@ -136,8 +136,9 @@ export function LocationModal({ isOpen, onClose, currentLocation, onLocationUpda
       const detected = await detectGPS();
       setDistrict(detected.district);
       setState(detected.state);
-      if (detected.village) setVillage(detected.village);
-      setStatusMsg(`📍 GPS Sthiti Mili: ${detected.latitude.toFixed(4)}°N, ${detected.longitude.toFixed(4)}°E`);
+      if (detected.latitude !== null && detected.longitude !== null) {
+        setStatusMsg(`📍 GPS Sthiti Mili: ${detected.latitude.toFixed(4)}°N, ${detected.longitude.toFixed(4)}°E`);
+      }
       onLocationUpdated(detected);
       setTimeout(() => {
         setIsDetecting(false);
@@ -188,9 +189,32 @@ export function LocationModal({ isOpen, onClose, currentLocation, onLocationUpda
 
     setIsSaving(true);
     try {
-      const matched = POPULAR_HUBS.find(h => h.district.toLowerCase() === district.toLowerCase());
-      const lat = matched ? matched.lat : 26.2183;
-      const lng = matched ? matched.lng : 78.1828;
+      const matched = POPULAR_HUBS.find(
+        (h) => h.district.toLowerCase() === district.toLowerCase()
+      );
+      let lat: number | null = matched ? matched.lat : null;
+      let lng: number | null = matched ? matched.lng : null;
+
+      if (lat === null || lng === null) {
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${district}, ${state}, India`)}&limit=1`,
+            {
+              headers: { 'User-Agent': 'KisanIQ-App/2.0' },
+              signal: AbortSignal.timeout(4000),
+            }
+          );
+          if (geoRes.ok) {
+            const geoData = await geoRes.json();
+            if (geoData && geoData.length > 0) {
+              lat = parseFloat(geoData[0].lat);
+              lng = parseFloat(geoData[0].lon);
+            }
+          }
+        } catch (geoErr) {
+          console.warn('[LocationModal] Geocoding lookup notice:', geoErr);
+        }
+      }
 
       await setLocation({
         latitude: lat,

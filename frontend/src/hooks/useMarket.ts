@@ -16,8 +16,8 @@ export function useMarket(crop: string = 'Wheat', quantity: number = 100) {
       const res = await marketApi.getComparison(
         crop,
         quantity,
-        location.latitude,
-        location.longitude,
+        location.latitude ?? undefined,
+        location.longitude ?? undefined,
         location.district,
         location.state
       );

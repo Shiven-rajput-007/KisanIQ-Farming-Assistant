@@ -253,7 +253,8 @@ export class SoilService {
   /**
    * Fetch the latest verified soil report for a farmer with agronomic evaluation
    */
-  async getLatestReport(farmerId: string = 'farmer_ramesh'): Promise<SoilReport | null> {
+  async getLatestReport(farmerId?: string): Promise<SoilReport | null> {
+    if (!farmerId) return null;
     const res = await db.query(
       `SELECT r.*, l.name as lab_name
        FROM soil_reports r
@@ -310,7 +311,8 @@ export class SoilService {
   /**
    * Fetch historical reports for trend charting
    */
-  async getReportsHistory(farmerId: string = 'farmer_ramesh'): Promise<SoilReport[]> {
+  async getReportsHistory(farmerId?: string): Promise<SoilReport[]> {
+    if (!farmerId) return [];
     const res = await db.query(
       `SELECT r.*, l.name as lab_name
        FROM soil_reports r

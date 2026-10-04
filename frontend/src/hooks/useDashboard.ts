@@ -14,8 +14,8 @@ export function useDashboard() {
     setError(null);
     try {
       const res = await dashboardApi.getDashboard({
-        lat: location.latitude,
-        lon: location.longitude,
+        lat: location.latitude ?? undefined,
+        lon: location.longitude ?? undefined,
         district: location.district,
         state: location.state,
       });

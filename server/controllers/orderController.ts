@@ -4,7 +4,11 @@ import { AuthRequest } from '../middleware/auth.js';
 
 export async function getOrders(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const farmerId = req.farmerId || 'farmer_ramesh';
+    const farmerId = req.farmerId;
+    if (!farmerId) {
+      res.status(401).json({ success: false, error: 'Unauthorized: Authentication required to view orders' });
+      return;
+    }
 
     const ordersRes = await db.query(
       `SELECT o.*, m.name as market_name, m.distance_km, s.id as shipment_id, s.status as shipment_status, s.tracking_code,

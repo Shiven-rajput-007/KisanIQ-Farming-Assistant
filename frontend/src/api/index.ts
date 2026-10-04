@@ -150,17 +150,22 @@ export const recommendationApi = {
 
 // ===== RISK =====
 export const riskApi = {
-  getAssessment: () =>
-    api.get<{ success: boolean; assessment: RiskAssessment }>('/risk/assessment'),
+  getAssessment: (lat?: number, lon?: number) => {
+    const params = new URLSearchParams();
+    if (lat !== undefined && lat !== null) params.set('lat', lat.toString());
+    if (lon !== undefined && lon !== null) params.set('lon', lon.toString());
+    const query = params.toString();
+    return api.get<{ success: boolean; assessment: RiskAssessment }>(query ? `/risk/assessment?${query}` : '/risk/assessment');
+  },
 };
 
 // ===== ASSISTANT =====
 export interface AssistantChatContext {
   activeLocation?: {
-    district: string;
-    state: string;
-    latitude: number;
-    longitude: number;
+    district?: string;
+    state?: string;
+    latitude?: number | null;
+    longitude?: number | null;
   };
   language?: string;
   previousIntent?: string;
@@ -418,10 +423,14 @@ export const soilApi = {
       `/soil/requests/${id}/status`,
       { status, notes }
     ),
-  getLatestReport: (farmerId: string = 'farmer_ramesh') =>
-    api.get<{ success: boolean; report: SoilReport | null }>(`/soil/reports/latest/${farmerId}`),
-  getReportsHistory: (farmerId: string = 'farmer_ramesh') =>
-    api.get<{ success: boolean; reports: SoilReport[] }>(`/soil/reports/history/${farmerId}`),
+  getLatestReport: (farmerId?: string) =>
+    api.get<{ success: boolean; report: SoilReport | null }>(
+      farmerId ? `/soil/reports/latest/${farmerId}` : `/soil/reports/latest`
+    ),
+  getReportsHistory: (farmerId?: string) =>
+    api.get<{ success: boolean; reports: SoilReport[] }>(
+      farmerId ? `/soil/reports/history/${farmerId}` : `/soil/reports/history`
+    ),
   getSensorReading: (fieldId: string = 'field_1') =>
     api.get<{ success: boolean; reading: any }>(`/soil/sensors/latest/${fieldId}`),
 };

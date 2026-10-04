@@ -4,20 +4,24 @@ import { AuthRequest } from '../middleware/auth.js';
 
 export async function getFarmerProfile(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const farmerId = req.farmerId || 'farmer_ramesh';
+    const farmerId = req.farmerId || (req.userId ? `frm_${req.userId}` : null);
+    if (!farmerId) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
 
-    const farmerRes = await db.query('SELECT * FROM farmers WHERE id = $1', [farmerId]);
+    const farmerRes = await db.query('SELECT * FROM farmers WHERE id = $1 OR user_id = $1', [farmerId]);
     if (farmerRes.rows.length === 0) {
-      res.status(404).json({ success: false, error: 'Farmer not found' });
+      res.status(404).json({ success: false, error: 'Farmer profile not found' });
       return;
     }
     const farmer = farmerRes.rows[0];
 
-    const farmRes = await db.query('SELECT * FROM farms WHERE farmer_id = $1', [farmerId]);
+    const farmRes = await db.query('SELECT * FROM farms WHERE farmer_id = $1', [farmer.id]);
     const farm = farmRes.rows[0] || { total_area: 5, soil_type: 'alluvial', irrigation_source: 'borewell' };
 
     const fieldsRes = await db.query('SELECT * FROM fields WHERE farm_id = $1', [farm.id]);
-    const cropsRes = await db.query('SELECT id FROM crops WHERE farmer_id = $1', [farmerId]);
+    const cropsRes = await db.query('SELECT id FROM crops WHERE farmer_id = $1', [farmer.id]);
 
     res.json({
       success: true,
@@ -31,8 +35,8 @@ export async function getFarmerProfile(req: AuthRequest, res: Response): Promise
           state: farmer.state,
           pincode: farmer.pincode,
           coordinates: {
-            lat: Number(farmer.latitude) || 26.2183,
-            lng: Number(farmer.longitude) || 78.1828,
+            lat: (farmer.latitude !== null && farmer.latitude !== undefined && !isNaN(Number(farmer.latitude))) ? Number(farmer.latitude) : null,
+            lng: (farmer.longitude !== null && farmer.longitude !== undefined && !isNaN(Number(farmer.longitude))) ? Number(farmer.longitude) : null,
           },
         },
         preferredLanguage: farmer.preferred_language,
@@ -62,7 +66,11 @@ export async function getFarmerProfile(req: AuthRequest, res: Response): Promise
 
 export async function updateFarmerProfile(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const farmerId = req.farmerId || 'farmer_ramesh';
+    const farmerId = req.farmerId || (req.userId ? `frm_${req.userId}` : null);
+    if (!farmerId) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
     const { name, village, district, state, pincode, preferredLanguage, soilType, irrigationSource, totalArea } = req.body;
 
     if (name || village || district || state || pincode || preferredLanguage) {
@@ -99,7 +107,11 @@ export async function updateFarmerProfile(req: AuthRequest, res: Response): Prom
 
 export async function updateFarmerLocation(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const farmerId = req.farmerId || 'farmer_ramesh';
+    const farmerId = req.farmerId || (req.userId ? `frm_${req.userId}` : null);
+    if (!farmerId) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
     const { latitude, longitude, village, district, state, pincode } = req.body;
 
     if (!district && latitude === undefined && longitude === undefined) {
@@ -147,7 +159,11 @@ export async function updateFarmerLocation(req: AuthRequest, res: Response): Pro
 
 export async function saveOnboarding(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const farmerId = req.farmerId || 'farmer_ramesh';
+    const farmerId = req.farmerId || (req.userId ? `frm_${req.userId}` : null);
+    if (!farmerId) {
+      res.status(401).json({ success: false, error: 'Authentication required' });
+      return;
+    }
     const { name, location, farmSize, crop, soil, language } = req.body;
 
     // Update farmer
