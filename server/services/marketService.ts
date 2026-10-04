@@ -130,6 +130,16 @@ export class MarketService {
       }
     }
 
+    // Dynamically resolve commodity, state, and district (supports en, hi, mr)
+    const resolvedComm = await mandiService.resolveCommodity(cropName);
+    const targetCrop = resolvedComm?.officialName || cropName;
+
+    const resolvedSt = mandiService.resolveState(state);
+    const targetState = resolvedSt?.stateName || state;
+
+    const resolvedDist = await mandiService.resolveDistrict(district, resolvedSt?.stateId, resolvedComm?.id);
+    const targetDistrict = resolvedDist?.districtName || district;
+
     const hasValidCoordinates =
       typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon);
 
@@ -140,26 +150,26 @@ export class MarketService {
 
     // 2. Tiered search for verified price records from PostgreSQL
     // Tier 1: Try District + State
-    let priceRows = await this.queryMarketPriceRows(cropName, district, state);
+    let priceRows = await this.queryMarketPriceRows(targetCrop, targetDistrict, targetState, cropName);
 
     if (priceRows.length > 0) {
       scope = 'district';
-      scopeNote = district ? `Verified APMC mandi data for ${district}` : undefined;
-    } else if (state && state.trim() !== '' && state !== 'all') {
+      scopeNote = targetDistrict ? `Verified APMC mandi data for ${targetDistrict}` : undefined;
+    } else if (targetState && targetState.trim() !== '' && targetState !== 'all') {
       // Tier 2: Try State-wide
-      priceRows = await this.queryMarketPriceRows(cropName, undefined, state);
+      priceRows = await this.queryMarketPriceRows(targetCrop, undefined, targetState, cropName);
       if (priceRows.length > 0) {
         scope = 'state';
-        scopeNote = `District data unavailable for ${district || 'local district'}. Showing verified ${state} market records.`;
+        scopeNote = `District data unavailable for ${targetDistrict || 'local district'}. Showing verified ${targetState} market records.`;
       }
     }
 
     if (priceRows.length === 0) {
       // Tier 3: Try Nationwide for this commodity
-      priceRows = await this.queryMarketPriceRows(cropName, undefined, undefined);
+      priceRows = await this.queryMarketPriceRows(targetCrop, undefined, undefined, cropName);
       if (priceRows.length > 0) {
         scope = 'national';
-        scopeNote = `State records unavailable. Showing verified national market records for ${cropName}.`;
+        scopeNote = `State records unavailable. Showing verified national market records for ${targetCrop}.`;
       }
     }
 
@@ -179,11 +189,11 @@ export class MarketService {
     // If no records found, or records are stale, and CEDA API is configured: trigger live sync
     if ((priceRows.length === 0 || isStale) && isCedaConfigured) {
       try {
-        console.log(`[MarketService] Triggering CEDA fetch for commodity "${cropName}" (state: ${state || 'All'})...`);
+        console.log(`[MarketService] Triggering CEDA fetch for commodity "${targetCrop}" (state: ${targetState || 'All'})...`);
         const syncRes = await mandiService.syncFromCedaApi({
-          commodity: cropName,
-          state,
-          district,
+          commodity: targetCrop,
+          state: targetState,
+          district: targetDistrict,
         });
 
         if (syncRes.status === 'failed') {
@@ -198,22 +208,22 @@ export class MarketService {
         }
 
         // Re-query PostgreSQL after ingestion with tiered fallback
-        priceRows = await this.queryMarketPriceRows(cropName, district, state);
+        priceRows = await this.queryMarketPriceRows(targetCrop, targetDistrict, targetState, cropName);
         if (priceRows.length > 0) {
           scope = 'district';
-          scopeNote = district ? `Verified APMC mandi data for ${district}` : undefined;
-        } else if (state && state.trim() !== '' && state !== 'all') {
-          priceRows = await this.queryMarketPriceRows(cropName, undefined, state);
+          scopeNote = targetDistrict ? `Verified APMC mandi data for ${targetDistrict}` : undefined;
+        } else if (targetState && targetState.trim() !== '' && targetState !== 'all') {
+          priceRows = await this.queryMarketPriceRows(targetCrop, undefined, targetState, cropName);
           if (priceRows.length > 0) {
             scope = 'state';
-            scopeNote = `District data unavailable for ${district || 'local district'}. Showing verified ${state} market records.`;
+            scopeNote = `District data unavailable for ${targetDistrict || 'local district'}. Showing verified ${targetState} market records.`;
           }
         }
         if (priceRows.length === 0) {
-          priceRows = await this.queryMarketPriceRows(cropName, undefined, undefined);
+          priceRows = await this.queryMarketPriceRows(targetCrop, undefined, undefined, cropName);
           if (priceRows.length > 0) {
             scope = 'national';
-            scopeNote = `State records unavailable. Showing verified national market records for ${cropName}.`;
+            scopeNote = `State records unavailable. Showing verified national market records for ${targetCrop}.`;
           }
         }
       } catch (syncErr: any) {
@@ -425,10 +435,26 @@ export class MarketService {
     };
   }
 
-  private async queryMarketPriceRows(cropName: string, district?: string, state?: string): Promise<any[]> {
-    const whereClauses: string[] = ['(mp.commodity ILIKE $1 OR mp.crop_name ILIKE $1)'];
+  private async queryMarketPriceRows(
+    cropName: string,
+    district?: string,
+    state?: string,
+    alternateCropName?: string
+  ): Promise<any[]> {
+    const cropClauses: string[] = ['mp.commodity ILIKE $1 OR mp.crop_name ILIKE $1'];
     const params: any[] = [`%${cropName.trim()}%`];
     let pIdx = 2;
+
+    if (
+      alternateCropName &&
+      alternateCropName.trim().toLowerCase() !== cropName.trim().toLowerCase()
+    ) {
+      cropClauses.push(`mp.commodity ILIKE $${pIdx} OR mp.crop_name ILIKE $${pIdx}`);
+      params.push(`%${alternateCropName.trim()}%`);
+      pIdx++;
+    }
+
+    const whereClauses: string[] = [`(${cropClauses.join(' OR ')})`];
 
     if (district && district.trim() !== '' && district !== 'all') {
       const cleanDistrict = district.trim().replace(/buddha/i, 'bud%').replace(/budh/i, 'bud%');

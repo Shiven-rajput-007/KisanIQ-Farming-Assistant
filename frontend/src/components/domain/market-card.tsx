@@ -67,12 +67,30 @@ function MarketCard({ market, rank, onWhyClick, onClick, className }: MarketCard
           </div>
         </div>
 
-        {/* Price */}
-        <div className="flex items-baseline gap-1 mb-3">
-          <IndianRupee className="h-5 w-5 text-sand-900" />
-          <span className="text-2xl font-bold text-sand-900">{market.price.toLocaleString('en-IN')}</span>
-          <span className="text-sm text-sand-600">/q</span>
+        {/* Price & Range */}
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+          <div className="flex items-baseline gap-1">
+            <IndianRupee className="h-5 w-5 text-sand-900" />
+            <span className="text-2xl font-bold text-sand-900">{market.price.toLocaleString('en-IN')}</span>
+            <span className="text-sm text-sand-600">/q</span>
+            <span className="text-[11px] text-sand-500 font-medium ml-1">({t('card.modal_price')})</span>
+          </div>
+
+          {(market.minPrice !== undefined && market.maxPrice !== undefined) && (
+            <div className="text-xs text-sand-700 font-medium bg-sand-100 px-2 py-0.5 rounded border border-sand-200">
+              {t('card.min_price')}: ₹{market.minPrice.toLocaleString('en-IN')} — {t('card.max_price')}: ₹{market.maxPrice.toLocaleString('en-IN')}
+            </div>
+          )}
         </div>
+
+        {/* Arrival Date */}
+        {market.arrivalDate && (
+          <div className="flex items-center gap-1.5 text-xs text-sand-500 mb-3">
+            <span>📅</span>
+            <span>{t('card.arrival_date')}:</span>
+            <span className="font-semibold text-sand-700">{market.arrivalDate}</span>
+          </div>
+        )}
 
         {/* Details grid */}
         <div className="space-y-2 text-sm">

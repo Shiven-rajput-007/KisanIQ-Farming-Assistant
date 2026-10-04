@@ -379,7 +379,152 @@ async function runMandiTestSuite() {
   );
 
   // -------------------------------------------------------------
-  // Test 15: Live CEDA Connection & Price Retrieval Check
+  // Test 15: Generic Multi-Language Commodity Resolution (EN, HI, MR)
+  // -------------------------------------------------------------
+  const wheatEn = await mandiService.resolveCommodity('Wheat');
+  const wheatHi = await mandiService.resolveCommodity('गेहूं');
+  const wheatMr = await mandiService.resolveCommodity('गहू');
+
+  const soyaEn = await mandiService.resolveCommodity('Soybean');
+  const soyaHi = await mandiService.resolveCommodity('सोयाबीन');
+
+  const paddyEn = await mandiService.resolveCommodity('Paddy');
+  const riceEn = await mandiService.resolveCommodity('Rice');
+  const riceHi = await mandiService.resolveCommodity('चावल');
+  const riceMr = await mandiService.resolveCommodity('भात');
+
+  const cottonEn = await mandiService.resolveCommodity('Cotton');
+  const cottonHi = await mandiService.resolveCommodity('कपास');
+  const cottonMr = await mandiService.resolveCommodity('कापूस');
+
+  const mustardEn = await mandiService.resolveCommodity('Mustard');
+  const mustardHi = await mandiService.resolveCommodity('सरसों');
+  const mustardMr = await mandiService.resolveCommodity('मोहरी');
+
+  const gramEn = await mandiService.resolveCommodity('Gram');
+  const chanaHi = await mandiService.resolveCommodity('चना');
+  const harbharaMr = await mandiService.resolveCommodity('हरभरा');
+
+  const unknownCrop = await mandiService.resolveCommodity('NonExistentCrop999');
+
+  const commodityResolutionsPass =
+    wheatEn?.id === 1 && wheatHi?.id === 1 && wheatMr?.id === 1 &&
+    soyaEn?.id === 3 && soyaHi?.id === 3 &&
+    paddyEn?.id === 2 && riceEn?.id === 2 && riceHi?.id === 2 && riceMr?.id === 2 &&
+    cottonEn?.id === 5 && cottonHi?.id === 5 && cottonMr?.id === 5 &&
+    mustardEn?.id === 4 && mustardHi?.id === 4 && mustardMr?.id === 4 &&
+    gramEn?.id === 7 && chanaHi?.id === 7 && harbharaMr?.id === 7 &&
+    unknownCrop === null;
+
+  assert(
+    commodityResolutionsPass,
+    15,
+    'Generic multi-language commodity resolver accurately resolves English, Hindi, Marathi crop terms and rejects unknown commodities without fallback'
+  );
+
+  // -------------------------------------------------------------
+  // Test 16: Generic Multi-Language State Resolution (Census 2011)
+  // -------------------------------------------------------------
+  const mpEn = mandiService.resolveState('Madhya Pradesh');
+  const mpAbbr = mandiService.resolveState('MP');
+  const mpHi = mandiService.resolveState('मध्य प्रदेश');
+
+  const mhEn = mandiService.resolveState('Maharashtra');
+  const mhAbbr = mandiService.resolveState('MH');
+  const mhMr = mandiService.resolveState('महाराष्ट्र');
+
+  const upEn = mandiService.resolveState('Uttar Pradesh');
+  const upAbbr = mandiService.resolveState('UP');
+  const upHi = mandiService.resolveState('उत्तर प्रदेश');
+
+  const pbEn = mandiService.resolveState('Punjab');
+  const pbHi = mandiService.resolveState('पंजाब');
+
+  const rjEn = mandiService.resolveState('Rajasthan');
+  const rjHi = mandiService.resolveState('राजस्थान');
+
+  const gjEn = mandiService.resolveState('Gujarat');
+  const gjHi = mandiService.resolveState('गुजरात');
+
+  const unknownState = mandiService.resolveState('Atlantis');
+
+  const stateResolutionsPass =
+    mpEn?.stateId === 23 && mpAbbr?.stateId === 23 && mpHi?.stateId === 23 &&
+    mhEn?.stateId === 27 && mhAbbr?.stateId === 27 && mhMr?.stateId === 27 &&
+    upEn?.stateId === 9 && upAbbr?.stateId === 9 && upHi?.stateId === 9 &&
+    pbEn?.stateId === 3 && pbHi?.stateId === 3 &&
+    rjEn?.stateId === 8 && rjHi?.stateId === 8 &&
+    gjEn?.stateId === 24 && gjHi?.stateId === 24 &&
+    unknownState === null;
+
+  assert(
+    stateResolutionsPass,
+    16,
+    'Generic multi-language state resolver accurately resolves Census 2011 State IDs across English, Hindi, Marathi, and standard abbreviations'
+  );
+
+  // -------------------------------------------------------------
+  // Test 17: Generic District Resolution & Spelling Normalization
+  // -------------------------------------------------------------
+  const gwaliorEn = await mandiService.resolveDistrict('Gwalior');
+  const gwaliorHi = await mandiService.resolveDistrict('ग्वालियर');
+
+  const puneEn = await mandiService.resolveDistrict('Pune');
+  const puneMr = await mandiService.resolveDistrict('पुणे');
+
+  const nashikEn = await mandiService.resolveDistrict('Nashik');
+  const nashikAlt = await mandiService.resolveDistrict('Nasik');
+  const nashikMr = await mandiService.resolveDistrict('नाशिक');
+
+  const gbnagar1 = await mandiService.resolveDistrict('Gautam Budh Nagar');
+  const gbnagar2 = await mandiService.resolveDistrict('Gautam Buddha Nagar');
+  const gbnagar3 = await mandiService.resolveDistrict('GB Nagar');
+
+  const indoreEn = await mandiService.resolveDistrict('Indore');
+  const indoreHi = await mandiService.resolveDistrict('इंदौर');
+
+  const ludhianaEn = await mandiService.resolveDistrict('Ludhiana');
+  const ludhianaHi = await mandiService.resolveDistrict('लुधियाना');
+
+  const districtResolutionsPass =
+    gwaliorEn?.districtId === 421 && gwaliorHi?.districtId === 421 &&
+    puneEn?.districtId === 521 && puneMr?.districtId === 521 &&
+    nashikEn?.districtId === 516 && nashikAlt?.districtId === 516 && nashikMr?.districtId === 516 &&
+    gbnagar1?.districtId === 141 && gbnagar2?.districtId === 141 && gbnagar3?.districtId === 141 &&
+    indoreEn?.districtId === 436 && indoreHi?.districtId === 436 &&
+    ludhianaEn?.districtId === 104 && ludhianaHi?.districtId === 104;
+
+  assert(
+    districtResolutionsPass,
+    17,
+    'Generic district resolver accurately resolves Census 2011 District IDs across variations, Hindi/Marathi names, and compound spellings'
+  );
+
+  // -------------------------------------------------------------
+  // Test 18: Multi-Language Market Comparison Querying
+  // -------------------------------------------------------------
+  const comparisonHindi = await marketService.getMarketComparison(
+    'farmer_ramesh',
+    'गेहूं',
+    100,
+    26.2183,
+    78.1828,
+    'ग्वालियर',
+    'मध्य प्रदेश'
+  );
+
+  assert(
+    comparisonHindi &&
+    Array.isArray(comparisonHindi.markets) &&
+    comparisonHindi.markets.length > 0 &&
+    typeof comparisonHindi.bestPracticalOption === 'string' &&
+    comparisonHindi.apiStatus.source.includes('CEDA Agmarknet'),
+    18,
+    'Market comparison correctly handles Hindi crop and location queries, resolving to verified APMC mandi records'
+  );
+
+  // -------------------------------------------------------------
+  // Test 19: Live CEDA Connection & Price Retrieval Check
   // -------------------------------------------------------------
   const apiKey = mandiService.getApiKey();
   if (apiKey) {
@@ -387,21 +532,21 @@ async function runMandiTestSuite() {
       console.log('  Testing live connection to CEDA Agmarknet API...');
       const commodities = await mandiService.fetchCedaCommodities();
       if (Array.isArray(commodities) && commodities.length > 0) {
-        console.log(`  ✅ PASS [Test 15]: CEDA Live Connection: Retrieved ${commodities.length} commodities`);
+        console.log(`  ✅ PASS [Test 19]: CEDA Live Connection: Retrieved ${commodities.length} commodities`);
         passed++;
       } else {
-        console.error('  ❌ FAIL [Test 15]: CEDA Live Connection returned empty commodities array');
+        console.error('  ❌ FAIL [Test 19]: CEDA Live Connection returned empty commodities array');
         failed++;
       }
     } catch (err: any) {
-      console.error('  ❌ FAIL [Test 15]: CEDA Live Connection error:', err.message);
+      console.error('  ❌ FAIL [Test 19]: CEDA Live Connection error:', err.message);
       failed++;
     }
   } else {
     // Explicit requirement: If a live API test cannot be executed because a credential is missing,
     // DO NOT fake the result. Instead report: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.
     // Do not mark it passed.
-    console.log('  ⚠️  [Test 15]: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.');
+    console.log('  ⚠️  [Test 19]: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.');
     blocked++;
   }
 

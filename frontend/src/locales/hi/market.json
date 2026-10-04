@@ -6,6 +6,10 @@
   "not_always_best": "सबसे ऊँचा भाव = सबसे अच्छा फैसला नहीं",
   "card": {
     "price": "भाव",
+    "min_price": "न्यूनतम",
+    "max_price": "अधिकतम",
+    "modal_price": "मॉडल भाव",
+    "arrival_date": "आवक दिनांक",
     "distance": "दूरी",
     "transport": "परिवहन लागत",
     "commission": "कमीशन",
@@ -95,6 +99,12 @@
     "Gram": "चना / हरभरा",
     "Maize": "मक्का",
     "Onion": "प्याज़",
-    "Paddy": "धान / चावल"
+    "Paddy": "धान / चावल",
+    "Potato": "आलू",
+    "Tomato": "टमाटर",
+    "Sugarcane": "गन्ना",
+    "Bajra": "बाजरा",
+    "Jowar": "ज्वार",
+    "Groundnut": "मूंगफली"
   }
 }

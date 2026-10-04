@@ -6,6 +6,10 @@
   "not_always_best": "सर्वात जास्त भाव = नेहमीच सर्वोत्तम निर्णय नाही",
   "card": {
     "price": "बाजारभाव",
+    "min_price": "किमान",
+    "max_price": "कमाल",
+    "modal_price": "सर्वसाधारण भाव",
+    "arrival_date": "आवक तारीख",
     "distance": "अंतर",
     "transport": "वाहतूक खर्च",
     "commission": "कमिशन / दलाली",
@@ -95,6 +99,12 @@
     "Gram": "हरभरा / चना",
     "Maize": "मका",
     "Onion": "कांदा",
-    "Paddy": "तांदूळ / भात"
+    "Paddy": "तांदूळ / भात",
+    "Potato": "बटाटा",
+    "Tomato": "टोमॅटो",
+    "Sugarcane": "ऊस",
+    "Bajra": "बाजरी",
+    "Jowar": "ज्वारी",
+    "Groundnut": "भुईमूग"
   }
 }

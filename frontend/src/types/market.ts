@@ -6,7 +6,13 @@ export interface MarketData {
   location: string;
   distance: number; // km
   cropName: string;
-  price: number; // per quintal
+  price: number; // modal price per quintal
+  minPrice?: number;
+  maxPrice?: number;
+  arrivalDate?: string; // YYYY-MM-DD
+  source?: string;
+  district?: string;
+  state?: string;
   priceChange?: number; // percentage change
   priceTrend: 'up' | 'down' | 'stable';
   transportCost: number;

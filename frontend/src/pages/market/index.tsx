@@ -232,7 +232,7 @@ export default function MarketPage() {
                   🌾 {t('select_commodity')}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
-                  {['Wheat', 'Soybean', 'Cotton', 'Mustard', 'Gram', 'Maize', 'Onion', 'Paddy'].map((cropId) => (
+                  {['Wheat', 'Soybean', 'Cotton', 'Mustard', 'Gram', 'Maize', 'Onion', 'Paddy', 'Potato', 'Tomato', 'Sugarcane', 'Bajra', 'Jowar', 'Groundnut'].map((cropId) => (
                     <button
                       key={cropId}
                       type="button"

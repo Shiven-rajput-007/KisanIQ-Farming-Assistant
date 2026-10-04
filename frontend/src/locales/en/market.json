@@ -6,6 +6,10 @@
   "not_always_best": "Highest price ≠ Best decision",
   "card": {
     "price": "Price",
+    "min_price": "Min",
+    "max_price": "Max",
+    "modal_price": "Modal",
+    "arrival_date": "Arrival Date",
     "distance": "Distance",
     "transport": "Transport Cost",
     "commission": "Commission",
@@ -95,6 +99,12 @@
     "Gram": "Gram / Chana",
     "Maize": "Maize",
     "Onion": "Onion",
-    "Paddy": "Paddy / Rice"
+    "Paddy": "Paddy / Rice",
+    "Potato": "Potato",
+    "Tomato": "Tomato",
+    "Sugarcane": "Sugarcane",
+    "Bajra": "Bajra",
+    "Jowar": "Jowar",
+    "Groundnut": "Groundnut"
   }
 }
