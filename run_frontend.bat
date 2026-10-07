@@ -1,3 +1,4 @@
 @echo off
-cd /d "%~dp0medical-diagnosis-assistant"
-call run_frontend.bat
+echo Starting KisanIQ Frontend...
+cd /d "%~dp0frontend"
+npm run dev

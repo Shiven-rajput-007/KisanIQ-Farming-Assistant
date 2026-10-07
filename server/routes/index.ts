@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { db } from '../db/index.js';
 import authRoutes from './authRoutes.js';
 import farmerRoutes from './farmerRoutes.js';
@@ -44,7 +46,17 @@ router.get('/health', async (_req, res) => {
 
 // Direct zip download endpoint
 router.get('/download', (_req, res) => {
-  res.download('D:\\antigravitry\\KisanIQ-project.zip', 'KisanIQ-project.zip');
+  const possiblePaths = [
+    path.resolve(process.cwd(), 'KisanIQ-project.zip'),
+    path.resolve(process.cwd(), '../KisanIQ-project.zip'),
+    'D:\\antigravitry\\KisanIQ-project.zip',
+  ];
+  for (const zipPath of possiblePaths) {
+    if (fs.existsSync(zipPath)) {
+      return res.download(zipPath, 'KisanIQ-project.zip');
+    }
+  }
+  res.status(404).json({ error: 'Zip file not found' });
 });
 
 // Dashboard briefing

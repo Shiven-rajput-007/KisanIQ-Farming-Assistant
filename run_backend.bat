@@ -1,3 +1,4 @@
 @echo off
-cd /d "%~dp0medical-diagnosis-assistant"
-call run_backend.bat
+echo Starting KisanIQ Backend Server...
+cd /d "%~dp0server"
+npm run dev
