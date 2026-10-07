@@ -132,3 +132,156 @@ html[lang="ml"], html[lang="or"] {
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }
+
+/* ========================================================
+   AGRICULTURAL THEME SYSTEM
+   1. Farm Green (Default)
+   2. Harvest Gold
+   3. Earth Natural
+   4. Night Farm (Dark)
+   ======================================================== */
+
+:root, [data-theme="farm-green"] {
+  --color-agri-forest-50: #F0F7F3;
+  --color-agri-forest-100: #DCEEE4;
+  --color-agri-forest-200: #BCDEC9;
+  --color-agri-forest-500: #2D6A4F;
+  --color-agri-forest-700: #1D4A35;
+  --color-agri-forest-800: #183D2B;
+  --color-agri-forest-900: #0E2A1D;
+
+  --color-agri-leaf-50: #F4F9F2;
+  --color-agri-leaf-100: #E8F5E5;
+  --color-agri-leaf-300: #94CD83;
+  --color-agri-leaf-500: #529940;
+  --color-agri-leaf-600: #3F7D32;
+  --color-agri-leaf-700: #2F6125;
+
+  --color-agri-gold-500: #D99411;
+  --color-sand-50: #FAF9F5;
+  --color-sand-100: #F3F1E7;
+  --color-sand-200: #E4E0D1;
+  --color-sand-300: #D2CCB8;
+  --color-sand-500: #8C8673;
+  --color-sand-600: #6C685A;
+  --color-sand-700: #524E43;
+  --color-sand-800: #3A372E;
+  --color-sand-900: #1F1E19;
+}
+
+[data-theme="harvest-gold"] {
+  --color-agri-forest-50: #FFFDF5;
+  --color-agri-forest-100: #FEF3D6;
+  --color-agri-forest-200: #FCD17A;
+  --color-agri-forest-500: #D99411;
+  --color-agri-forest-700: #B87A04;
+  --color-agri-forest-800: #8A5902;
+  --color-agri-forest-900: #5C3A00;
+
+  --color-agri-leaf-50: #FFFBEB;
+  --color-agri-leaf-100: #FEF3C7;
+  --color-agri-leaf-300: #FDE68A;
+  --color-agri-leaf-500: #F59E0B;
+  --color-agri-leaf-600: #D97706;
+  --color-agri-leaf-700: #B45309;
+
+  --color-sand-50: #FDFBF7;
+  --color-sand-100: #F8F4E8;
+  --color-sand-200: #EFE8D3;
+  --color-sand-300: #DDD3B5;
+  --color-sand-900: #262010;
+}
+
+[data-theme="earth-natural"] {
+  --color-agri-forest-50: #F8F5F2;
+  --color-agri-forest-100: #EFE6E0;
+  --color-agri-forest-200: #D7CCC8;
+  --color-agri-forest-500: #6D4C41;
+  --color-agri-forest-700: #4E342E;
+  --color-agri-forest-800: #3E2723;
+  --color-agri-forest-900: #271612;
+
+  --color-agri-leaf-50: #F5F1EE;
+  --color-agri-leaf-100: #E8DDD8;
+  --color-agri-leaf-300: #BCAAA4;
+  --color-agri-leaf-500: #795548;
+  --color-agri-leaf-600: #5D4037;
+  --color-agri-leaf-700: #4E342E;
+
+  --color-sand-50: #FBF8F5;
+  --color-sand-100: #F3ECE6;
+  --color-sand-200: #E3D7CE;
+  --color-sand-300: #CFBEB2;
+  --color-sand-900: #2C1B18;
+}
+
+[data-theme="night-farm"] {
+  --color-agri-forest-50: #064E3B;
+  --color-agri-forest-100: #065F46;
+  --color-agri-forest-200: #047857;
+  --color-agri-forest-500: #10B981;
+  --color-agri-forest-700: #34D399;
+  --color-agri-forest-800: #6EE7B7;
+  --color-agri-forest-900: #A7F3D0;
+
+  --color-agri-leaf-50: #022C22;
+  --color-agri-leaf-100: #064E3B;
+  --color-agri-leaf-300: #059669;
+  --color-agri-leaf-500: #10B981;
+  --color-agri-leaf-600: #34D399;
+  --color-agri-leaf-700: #6EE7B7;
+
+  --color-sand-50: #0B0F12;
+  --color-sand-100: #141A1F;
+  --color-sand-200: #1E262E;
+  --color-sand-300: #2B3540;
+  --color-sand-500: #64748B;
+  --color-sand-600: #94A3B8;
+  --color-sand-700: #CBD5E1;
+  --color-sand-800: #E2E8F0;
+  --color-sand-900: #F8FAFC;
+}
+
+[data-theme="night-farm"] body {
+  background-color: #0B0F12;
+  color: #F8FAFC;
+}
+
+[data-theme="night-farm"] .bg-white {
+  background-color: #141A1F !important;
+  color: #F8FAFC;
+  border-color: #2B3540 !important;
+}
+
+[data-theme="night-farm"] .bg-sand-50 {
+  background-color: #0B0F12 !important;
+}
+
+[data-theme="night-farm"] .bg-sand-100 {
+  background-color: #1E262E !important;
+}
+
+[data-theme="night-farm"] .bg-sand-200 {
+  background-color: #2B3540 !important;
+}
+
+[data-theme="night-farm"] .text-sand-900 {
+  color: #F8FAFC !important;
+}
+
+[data-theme="night-farm"] .text-sand-800 {
+  color: #E2E8F0 !important;
+}
+
+[data-theme="night-farm"] .text-sand-700 {
+  color: #CBD5E1 !important;
+}
+
+[data-theme="night-farm"] .text-sand-600 {
+  color: #94A3B8 !important;
+}
+
+[data-theme="night-farm"] .border-sand-200,
+[data-theme="night-farm"] .border-sand-300 {
+  border-color: #2B3540 !important;
+}

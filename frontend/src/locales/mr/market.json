@@ -106,5 +106,25 @@
     "Bajra": "बाजरी",
     "Jowar": "ज्वारी",
     "Groundnut": "भुईमूग"
+  },
+  "decision": {
+    "action_sell_now": "आता विका",
+    "tagline_sell_now": "कमाल निव्वळ परतावा",
+    "action_hold": "थांबून ठेवा",
+    "tagline_hold": "भाव वाढण्याची चिन्हे",
+    "action_wait": "प्रतीक्षा करा",
+    "tagline_wait": "हवामान व वाहतूक इशारा",
+    "action_partial_sell": "अंशतः विक्री (60/40)",
+    "tagline_partial_sell": "संतुलित जोखीम व्यवस्थापन",
+    "action_insufficient_data": "माहितीची प्रतीक्षा",
+    "tagline_insufficient_data": "एगमार्कनेट ताळमेळ सुरू",
+    "risk_score": "जोखीम गुण",
+    "top_mandi": "शिफारस केलेली बाजार समिती",
+    "net_realization": "निव्वळ प्राप्ती दर",
+    "total_net_return": "अंदाजे एकूण निव्वळ उत्पन्न",
+    "action_recommendation": "कृती सल्ला",
+    "strategy_6040": "शिफारस केलेली 60/40 विभागणी पद्धत",
+    "why_drivers_title": "आर्थिक व बाजार घटक (\"का?\")",
+    "risk_dimensions_title": "5-घटक जोखीम विश्लेषण"
   }
 }

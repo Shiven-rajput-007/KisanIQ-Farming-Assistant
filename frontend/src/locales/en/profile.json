@@ -33,7 +33,20 @@
     "title": "Settings",
     "notifications": "Notifications",
     "language": "Language",
-    "about": "About KisanIQ"
+    "about": "About KisanIQ",
+    "theme_title": "Agricultural Theme",
+    "theme_desc": "Select a visual color palette crafted for agricultural environments.",
+    "general_title": "Preferences"
+  },
+  "themes": {
+    "farm_green": "Farm Green",
+    "farm_green_desc": "Lush crops, organic & fresh fields",
+    "harvest_gold": "Harvest Gold",
+    "harvest_gold_desc": "Ripe wheat & mustard, golden prosperity",
+    "earth_natural": "Earth Natural",
+    "earth_natural_desc": "Rich fertile soil & natural clay",
+    "night_farm": "Night Farm",
+    "night_farm_desc": "High contrast night mode for field monitoring"
   },
   "onboarding": {
     "welcome": "Welcome to KisanIQ",

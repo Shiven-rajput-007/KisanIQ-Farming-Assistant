@@ -106,5 +106,25 @@
     "Bajra": "Bajra",
     "Jowar": "Jowar",
     "Groundnut": "Groundnut"
+  },
+  "decision": {
+    "action_sell_now": "SELL NOW",
+    "tagline_sell_now": "Peak Net Realization",
+    "action_hold": "HOLD",
+    "tagline_hold": "Upward Price Momentum",
+    "action_wait": "WAIT",
+    "tagline_wait": "Transit / Weather Alert",
+    "action_partial_sell": "PARTIAL SELL (60/40)",
+    "tagline_partial_sell": "Balanced Risk Hedge",
+    "action_insufficient_data": "AWAITING DATA",
+    "tagline_insufficient_data": "Synchronizing Agmarknet",
+    "risk_score": "Risk Score",
+    "top_mandi": "Recommended Mandi",
+    "net_realization": "Net Realization",
+    "total_net_return": "Estimated Total Net",
+    "action_recommendation": "Actionable Guidance",
+    "strategy_6040": "Recommended 60/40 Split Strategy",
+    "why_drivers_title": "Economic & Market Drivers (\"Why?\")",
+    "risk_dimensions_title": "5-Factor Risk Breakdown"
   }
 }

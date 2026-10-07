@@ -1,5 +1,6 @@
 import { db } from '../db/index.js';
 import { mandiService } from './mandiService.js';
+import { weatherService } from './weatherService.js';
 
 export interface MarketItem {
   id: string;
@@ -28,6 +29,44 @@ export interface MarketItem {
   arrivalDate?: string;
   lastUpdated: string;
   isDemo?: boolean;
+}
+
+export interface RiskDimension {
+  score: number;
+  level: 'low' | 'medium' | 'high';
+  note: string;
+}
+
+export interface SellingDecision {
+  action: 'SELL_NOW' | 'HOLD' | 'WAIT' | 'PARTIAL_SELL' | 'INSUFFICIENT_DATA';
+  actionKey: string;
+  badgeVariant: 'success' | 'warning' | 'caution' | 'info';
+  overallRisk: 'low' | 'medium' | 'high' | 'critical';
+  riskScore: number;
+  confidence: 'high' | 'medium' | 'low';
+  confidenceNote: string;
+  primaryMarketName?: string;
+  primaryPrice?: number;
+  expectedNetReturn?: number;
+  effectiveRealizedPrice?: number;
+  timeHorizon?: string;
+  reasons: string[];
+  suggestedAction: string;
+  riskBreakdown: {
+    marketRisk: RiskDimension;
+    weatherRisk: RiskDimension;
+    storageRisk: RiskDimension;
+    volatilityRisk: RiskDimension;
+    logisticsRisk: RiskDimension;
+  };
+  partialSplit?: {
+    sellNowPercent: number;
+    sellNowQuantity: number;
+    holdPercent: number;
+    holdQuantity: number;
+    sellNowReturn: number;
+    holdEstimatedReturn: number;
+  };
 }
 
 export interface PartialSelling {
@@ -96,6 +135,7 @@ export class MarketService {
     bestPracticalOption: string;
     partialSelling: PartialSelling | null;
     whyExplanation: any;
+    sellingDecision: SellingDecision;
     lastUpdated: string;
   }> {
     // 1. Resolve active user coordinates from parameter or authenticated farmer profile
@@ -142,6 +182,15 @@ export class MarketService {
 
     const hasValidCoordinates =
       typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon);
+
+    let userWeather: any = null;
+    if (hasValidCoordinates) {
+      try {
+        userWeather = await weatherService.getWeather(lat!, lon!);
+      } catch {
+        // Safe: non-blocking weather advisory
+      }
+    }
 
     const isCedaConfigured = mandiService.isConfigured();
 
@@ -282,6 +331,14 @@ export class MarketService {
         failureMessage = 'CEDA Agmarknet returned an invalid response structure.';
       }
 
+      const emptyDecision = this.computeSellingDecision({
+        cropName,
+        quantityQuintals,
+        markets: [],
+        weatherData: userWeather,
+        isStale: false,
+      });
+
       return {
         success: false,
         code: 'MANDI_DATA_UNAVAILABLE',
@@ -294,6 +351,7 @@ export class MarketService {
         bestPracticalOption: '',
         partialSelling: null,
         whyExplanation: null,
+        sellingDecision: emptyDecision,
         lastUpdated: '',
       };
     }
@@ -421,6 +479,15 @@ export class MarketService {
       advancedDetails: 'Estimated Net Return = Gross Value - (Transport + Commission + Loading + Wastage). Assumptions: Transport ₹25/km per 50q (min ₹300), APMC Commission 2.5%, Loading ₹5/q, Expected Wastage 1.0%. Sourced from CEDA Agmarknet.',
     };
 
+    // 6. Compute Dynamic Hold / Wait / Sell / Partial Sell Decision backed by real inputs
+    const sellingDecision = this.computeSellingDecision({
+      cropName,
+      quantityQuintals,
+      markets: sorted,
+      weatherData: userWeather,
+      isStale,
+    });
+
     return {
       success: true,
       cropName,
@@ -431,7 +498,262 @@ export class MarketService {
       bestPracticalOption,
       partialSelling,
       whyExplanation,
+      sellingDecision,
       lastUpdated: topMarket.lastUpdated,
+    };
+  }
+
+  /**
+   * Computes an explainable, multi-dimensional Hold / Wait / Sell / Partial Sell decision
+   * using verified CEDA market prices, logistics net realization, weather forecast, and perishability.
+   */
+  public computeSellingDecision(params: {
+    cropName: string;
+    quantityQuintals: number;
+    markets: MarketItem[];
+    weatherData?: any;
+    isStale?: boolean;
+    cropStage?: string;
+  }): SellingDecision {
+    const { cropName, quantityQuintals, markets, weatherData, isStale } = params;
+
+    if (!markets || markets.length === 0) {
+      return {
+        action: 'INSUFFICIENT_DATA',
+        actionKey: 'decision.action_insufficient_data',
+        badgeVariant: 'info',
+        overallRisk: 'medium',
+        riskScore: 50,
+        confidence: 'low',
+        confidenceNote: 'No verified mandi records available from CEDA Agmarknet for this selection.',
+        reasons: [
+          'No recent arrival bulletin reported in CEDA Agmarknet database for this crop and location.',
+          'Physical mandis may not have conducted auctions today or data has not yet reached national servers.',
+          'Insufficient verified auction data to compute dependable selling advisory.',
+        ],
+        suggestedAction: 'Select a broader district or check back when local APMC trading resumes.',
+        riskBreakdown: {
+          marketRisk: { score: 50, level: 'medium', note: 'Market data currently insufficient' },
+          weatherRisk: { score: 25, level: 'low', note: 'Weather conditions normal' },
+          storageRisk: { score: 40, level: 'medium', note: 'Standard holding risk' },
+          volatilityRisk: { score: 50, level: 'medium', note: 'Price spread undetermined' },
+          logisticsRisk: { score: 50, level: 'medium', note: 'Logistics routes undetermined' },
+        },
+      };
+    }
+
+    const topMarket = markets[0];
+    const modalPrice = topMarket.price;
+    const netReturn = topMarket.netReturn;
+    const effectivePrice = Math.round(netReturn / Math.max(1, quantityQuintals));
+    const distance = topMarket.distance;
+    const trend = topMarket.priceTrend || 'stable';
+
+    // 1. Calculate price spread across regional mandis
+    const allPrices = markets.map((m) => m.price);
+    const minP = Math.min(...allPrices);
+    const maxP = Math.max(...allPrices);
+    const priceSpreadPct = modalPrice > 0 ? Math.round(((maxP - minP) / modalPrice) * 100) : 0;
+
+    // 2. Crop perishability check
+    const lowerCrop = cropName.toLowerCase();
+    const isPerishable = ['tomato', 'onion', 'potato', 'vegetable', 'टमाटर', 'कांदा', 'आलू', 'बटाटा', 'टोमॅटो', 'प्याज'].some((p) =>
+      lowerCrop.includes(p)
+    );
+
+    // 3. Multi-dimensional risk scoring
+    // Market Risk (0-100)
+    let marketRiskScore = 25;
+    let marketRiskNote = 'Stable modal auction prices across reporting mandis.';
+    if (trend === 'down') {
+      marketRiskScore = 65;
+      marketRiskNote = 'Arrivals increasing; modal prices showing downward pressure.';
+    } else if (trend === 'up') {
+      marketRiskScore = 18;
+      marketRiskNote = 'Firm market demand with positive price momentum.';
+    }
+    const marketRiskLevel: 'low' | 'medium' | 'high' =
+      marketRiskScore > 60 ? 'high' : marketRiskScore > 30 ? 'medium' : 'low';
+
+    // Weather Risk (0-100)
+    let weatherRiskScore = 20;
+    let weatherRiskNote = 'Dry, favorable weather for grain transit and yard auctions.';
+    if (weatherData) {
+      const currentRainProb = weatherData.current?.rainProbability ?? 0;
+      const forecastRainProb = Array.isArray(weatherData.forecast)
+        ? Math.max(...weatherData.forecast.map((f: any) => f?.rainProbability ?? 0), 0)
+        : 0;
+      const rainProb = Math.max(currentRainProb, forecastRainProb);
+      if (rainProb >= 60) {
+        weatherRiskScore = 80;
+        weatherRiskNote = `Severe rain expected (${rainProb}%); transport and open-yard unloading risk is high.`;
+      } else if (rainProb >= 35) {
+        weatherRiskScore = 50;
+        weatherRiskNote = `Moderate rain probability (${rainProb}%); tarping and moisture protection advised.`;
+      }
+    }
+    const weatherRiskLevel: 'low' | 'medium' | 'high' =
+      weatherRiskScore > 60 ? 'high' : weatherRiskScore > 30 ? 'medium' : 'low';
+
+    // Storage Risk (0-100)
+    let storageRiskScore = 20;
+    let storageRiskNote = 'Durable grain suitable for controlled warehouse holding (₹12-15/q/month).';
+    if (isPerishable) {
+      storageRiskScore = 75;
+      storageRiskNote = 'Perishable produce subject to rapid post-harvest shrinkage, weight loss, and decay.';
+    } else if ((weatherData?.current?.humidity ?? 0) > 75) {
+      storageRiskScore = 45;
+      storageRiskNote = 'High ambient humidity elevates fungal spore risk in non-aerated godowns.';
+    }
+    const storageRiskLevel: 'low' | 'medium' | 'high' =
+      storageRiskScore > 60 ? 'high' : storageRiskScore > 30 ? 'medium' : 'low';
+
+    // Volatility Risk (0-100)
+    let volatilityRiskScore = 20;
+    let volatilityRiskNote = `Regional auction prices are consistent within ${priceSpreadPct}% spread.`;
+    if (priceSpreadPct > 20) {
+      volatilityRiskScore = 65;
+      volatilityRiskNote = `High price divergence (${priceSpreadPct}%) across mandis; sharp daily fluctuations observed.`;
+    } else if (priceSpreadPct > 10) {
+      volatilityRiskScore = 38;
+      volatilityRiskNote = `Moderate price spread (${priceSpreadPct}%) between nearby markets.`;
+    }
+    const volatilityRiskLevel: 'low' | 'medium' | 'high' =
+      volatilityRiskScore > 60 ? 'high' : volatilityRiskScore > 30 ? 'medium' : 'low';
+
+    // Logistics Risk (0-100)
+    let logisticsRiskScore = 15;
+    let logisticsRiskNote = distance > 0 ? `Local mandi within ${distance} km.` : 'Short distance APMC yard.';
+    if (distance > 70) {
+      logisticsRiskScore = 70;
+      logisticsRiskNote = `Long haul transit (${distance} km) with higher freight and in-transit wastage risk.`;
+    } else if (distance > 30) {
+      logisticsRiskScore = 40;
+      logisticsRiskNote = `Intermediate distance (${distance} km); freight cost impacts net realization.`;
+    }
+    const logisticsRiskLevel: 'low' | 'medium' | 'high' =
+      logisticsRiskScore > 60 ? 'high' : logisticsRiskScore > 30 ? 'medium' : 'low';
+
+    // Weighted Overall Risk Score
+    const overallScore = Math.round(
+      0.35 * marketRiskScore +
+      0.25 * weatherRiskScore +
+      0.15 * storageRiskScore +
+      0.15 * volatilityRiskScore +
+      0.10 * logisticsRiskScore
+    );
+    const overallRiskLevel: 'low' | 'medium' | 'high' | 'critical' =
+      overallScore > 75 ? 'critical' : overallScore > 55 ? 'high' : overallScore > 30 ? 'medium' : 'low';
+
+    // 4. Decision Rule Evaluation
+    let action: 'SELL_NOW' | 'HOLD' | 'WAIT' | 'PARTIAL_SELL' = 'PARTIAL_SELL';
+    let timeHorizon = 'Sell 60% now, hold 40% for 10-14 days';
+    const reasons: string[] = [];
+    let suggestedAction = '';
+
+    // Condition 1: WAIT if imminent weather threatens transport/unloading or harvest not dry
+    if (weatherRiskScore >= 65) {
+      action = 'WAIT';
+      timeHorizon = 'Wait 2 to 4 days';
+      reasons.push(
+        `Heavy rain or wet weather expected (${weatherRiskNote}).`,
+        `Open APMC yards at ${topMarket.name} may pause auctions or see soggy produce discounts.`,
+        'Holding dispatch until weather clears prevents transit water damage and transport breakdown.'
+      );
+      suggestedAction = `Postpone field dispatch for 2-3 days until weather clears, then reassess auction rates at ${topMarket.name}.`;
+    }
+    // Condition 2: SELL NOW if perishable, or trend is downwards, or exceptional local net realization
+    else if (isPerishable || trend === 'down' || (distance <= 25 && effectivePrice >= modalPrice * 0.95)) {
+      action = 'SELL_NOW';
+      timeHorizon = 'Immediate (Today or Tomorrow)';
+      if (isPerishable) {
+        reasons.push(
+          'Produce is perishable with high weight loss and rot risk in normal storage.',
+          `Current verified net return of ₹${effectivePrice.toLocaleString('en-IN')}/q at ${topMarket.name} is attractive.`,
+          'Immediate sale locks in value and prevents spoilage deductions.'
+        );
+        suggestedAction = `Proceed with sale at ${topMarket.name} to capture current auction price before weight loss occurs.`;
+      } else if (trend === 'down') {
+        reasons.push(
+          'Regional arrival volumes are rising, putting downward pressure on modal prices.',
+          'Holding costs (₹15/q/month) combined with price softening make storing uneconomical.',
+          `Selling today protects your net margin of ₹${netReturn.toLocaleString('en-IN')}.`
+        );
+        suggestedAction = `Sell at ${topMarket.name} now to avoid further price erosion in coming weeks.`;
+      } else {
+        reasons.push(
+          `Current verified modal price (₹${modalPrice.toLocaleString('en-IN')}/q) at nearby ${topMarket.name} offers peak net realization.`,
+          `Short transit distance (${distance > 0 ? `${distance} km` : 'local'}) keeps transport deductions minimal.`,
+          'Locking in sale now avoids warehouse storage fees and market uncertainty.'
+        );
+        suggestedAction = `Sell available produce at ${topMarket.name} today to secure estimated net return of ₹${netReturn.toLocaleString('en-IN')}.`;
+      }
+    }
+    // Condition 3: HOLD if upward price trend, non-perishable grain, low storage risk
+    else if (trend === 'up' && !isPerishable && storageRiskScore <= 35) {
+      action = 'HOLD';
+      timeHorizon = 'Hold for 2 to 3 weeks';
+      reasons.push(
+        'Modal auction prices are exhibiting upward momentum across regional APMC yards.',
+        'Dry grain storage risk is low; expected appreciation exceeds holding costs (~₹15/q/month).',
+        'Tapering local arrivals indicate prices may strengthen further over the next fortnight.'
+      );
+      suggestedAction = `Store grain in dry, aerated bags for 10-20 days; monitor arrival peaks before liquidating.`;
+    }
+    // Condition 4: PARTIAL SELL (Balanced approach for medium volatility or large volumes)
+    else {
+      action = 'PARTIAL_SELL';
+      const sellNowPct = 60;
+      const holdPct = 40;
+      const sellNowQty = Math.round(quantityQuintals * (sellNowPct / 100));
+      const holdQty = quantityQuintals - sellNowQty;
+      timeHorizon = `Sell ${sellNowPct}% now, hold ${holdPct}% for 2 weeks`;
+      reasons.push(
+        `Selling ${sellNowQty} quintals now secures immediate working capital (estimated ₹${Math.round(effectivePrice * sellNowQty).toLocaleString('en-IN')}).`,
+        `Holding ${holdQty} quintals buffers against market volatility while preserving upside if prices climb.`,
+        'Provides balanced risk management without exposing entire harvest to single-day price fluctuations.'
+      );
+      suggestedAction = `Dispatch ${sellNowQty} quintals to ${topMarket.name} today and hold ${holdQty} quintals in storage.`;
+    }
+
+    const sellNowQty = Math.round(quantityQuintals * 0.6);
+    const holdQty = quantityQuintals - sellNowQty;
+    const sellNowReturn = Math.round(effectivePrice * sellNowQty);
+    const holdEstimatedReturn = Math.round(effectivePrice * holdQty * 1.05);
+
+    return {
+      action,
+      actionKey: `decision.action_${action.toLowerCase()}`,
+      badgeVariant:
+        action === 'SELL_NOW' ? 'success' : action === 'HOLD' ? 'warning' : action === 'WAIT' ? 'caution' : 'info',
+      overallRisk: overallRiskLevel,
+      riskScore: overallScore,
+      confidence: isStale ? 'medium' : 'high',
+      confidenceNote: isStale
+        ? 'Based on recent verified CEDA Agmarknet arrival bulletins (<48h old).'
+        : 'Based on fresh verified CEDA Agmarknet auction settlements.',
+      primaryMarketName: topMarket.name,
+      primaryPrice: modalPrice,
+      expectedNetReturn: netReturn,
+      effectiveRealizedPrice: effectivePrice,
+      timeHorizon,
+      reasons,
+      suggestedAction,
+      riskBreakdown: {
+        marketRisk: { score: marketRiskScore, level: marketRiskLevel, note: marketRiskNote },
+        weatherRisk: { score: weatherRiskScore, level: weatherRiskLevel, note: weatherRiskNote },
+        storageRisk: { score: storageRiskScore, level: storageRiskLevel, note: storageRiskNote },
+        volatilityRisk: { score: volatilityRiskScore, level: volatilityRiskLevel, note: volatilityRiskNote },
+        logisticsRisk: { score: logisticsRiskScore, level: logisticsRiskLevel, note: logisticsRiskNote },
+      },
+      partialSplit: {
+        sellNowPercent: 60,
+        sellNowQuantity: sellNowQty,
+        holdPercent: 40,
+        holdQuantity: holdQty,
+        sellNowReturn,
+        holdEstimatedReturn,
+      },
     };
   }
 

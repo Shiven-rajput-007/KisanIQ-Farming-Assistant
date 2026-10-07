@@ -56,7 +56,8 @@
     "offline_title": "You are offline",
     "offline_description": "Showing last available information.",
     "empty_title": "Nothing here yet",
-    "demo_label": "Demo Data"
+    "demo_label": "Demo Data",
+    "active": "Active"
   },
   "language": {
     "title": "Choose Language",

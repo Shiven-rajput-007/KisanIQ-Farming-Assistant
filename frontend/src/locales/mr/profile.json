@@ -33,7 +33,20 @@
     "title": "सेटिंग्ज",
     "notifications": "सूचना (Notifications)",
     "language": "भाषा बदला",
-    "about": "KisanIQ बद्दल"
+    "about": "KisanIQ बद्दल",
+    "theme_title": "कृषी रंग थीम",
+    "theme_desc": "शेत आणि बाह्य वापरासाठी अनुकूल रंगसंगती निवडा.",
+    "general_title": "प्राधान्ये"
+  },
+  "themes": {
+    "farm_green": "शेत हिरवा (डिफॉल्ट)",
+    "farm_green_desc": "हिरवीगार पिके, सेंद्रिय आणि ताजेतवाने शेत",
+    "harvest_gold": "सोनेरी पीक",
+    "harvest_gold_desc": "पिकलेले गहू आणि मोहरी, सुवर्ण समृद्धी",
+    "earth_natural": "नैसर्गिक माती",
+    "earth_natural_desc": "सुपीक काळी-कसदार माती व नैसर्गिक रंग",
+    "night_farm": "रात्र शेत (डार्क मोड)",
+    "night_farm_desc": "रात्री शेतातील पाहणीसाठी उच्च कॉन्ट्रास्ट"
   },
   "onboarding": {
     "welcome": "KisanIQ मध्ये आपले स्वागत आहे",

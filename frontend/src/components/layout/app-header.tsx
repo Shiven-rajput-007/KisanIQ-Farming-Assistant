@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useActiveLocation } from '@/context/LocationContext';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useLanguage } from '@/hooks/useLanguage';
+import { useTheme } from '@/context/ThemeContext';
 import { LocationModal } from '@/components/domain/location-modal';
 
 interface AppHeaderProps {
@@ -24,6 +25,8 @@ function AppHeader({ farmerName, location: propLocation, notificationCount, clas
   const { location: activeLoc } = useActiveLocation();
   const { notifications } = useNotifications();
   const { currentLanguage, changeLanguage } = useLanguage();
+  const { theme, cycleTheme, themeOptions } = useTheme();
+  const currentThemeObj = themeOptions.find((t) => t.id === theme) || themeOptions[0];
   const [showLocationModal, setShowLocationModal] = useState(false);
 
   const cycleLanguage = () => {
@@ -134,6 +137,19 @@ function AppHeader({ farmerName, location: propLocation, notificationCount, clas
                     : currentLanguage === 'hi'
                     ? 'हिन्दी'
                     : 'English'}
+                </span>
+              </button>
+
+              {/* Agricultural Theme Switcher */}
+              <button
+                type="button"
+                onClick={cycleTheme}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-sand-700 bg-sand-100 hover:bg-sand-200 transition-colors border border-sand-300 cursor-pointer"
+                title={`Theme: ${currentThemeObj.defaultLabel} (${currentThemeObj.defaultDesc})`}
+              >
+                <span>{currentThemeObj.emoji}</span>
+                <span className="hidden sm:inline">
+                  {t(currentThemeObj.labelKey, { defaultValue: currentThemeObj.defaultLabel })}
                 </span>
               </button>
 

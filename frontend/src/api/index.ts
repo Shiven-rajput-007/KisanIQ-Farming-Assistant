@@ -8,6 +8,7 @@ import type {
   CropAction,
   MarketData,
   PartialSelling,
+  SellingDecision,
   Recommendation,
   RiskAssessment,
   Notification,
@@ -110,6 +111,7 @@ export interface MarketComparisonResponse {
   markets: MarketData[];
   bestPracticalOption: string;
   partialSelling: PartialSelling;
+  sellingDecision?: SellingDecision;
   whyExplanation: any;
   lastUpdated: string;
 }

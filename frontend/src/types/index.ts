@@ -1,7 +1,7 @@
 export type { Farmer, FarmProfile, Field, SoilType, IrrigationType } from './farmer';
 export type { Crop, CropStage, CropStageInfo, CropHealth, CropAction, CropActionType } from './crop';
 export type { WeatherData, WeatherCondition, WeatherForecast, FarmingImplication } from './weather';
-export type { MarketData, MarketComparison, SellingDecision, PartialSelling, PriceTrend } from './market';
+export type { MarketData, MarketComparison, SellingDecision, RiskDimension, PartialSelling, PriceTrend } from './market';
 export type { ActionType, RecommendationStatus, Recommendation, WhyExplanation, WhyDataPoint, DailyActions, Alert } from './recommendation';
 export type { RiskLevel, RiskAssessment, RiskCategory, RiskAlert } from './risk';
 export type { Notification } from './notification';

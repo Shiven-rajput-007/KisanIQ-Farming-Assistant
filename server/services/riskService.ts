@@ -95,7 +95,7 @@ export class RiskService {
       const priceStats = await db.query(
         `SELECT min_price, max_price, modal_price FROM market_prices 
          WHERE commodity ILIKE $1 
-         ORDER BY price_date DESC LIMIT 5`,
+         ORDER BY arrival_date DESC NULLS LAST, created_at DESC LIMIT 5`,
         [`%${cropToAssess}%`]
       );
       if (priceStats.rows.length > 0) {

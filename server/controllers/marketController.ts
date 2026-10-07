@@ -120,9 +120,42 @@ export async function getMarketDecision(req: AuthRequest, res: Response): Promis
       manualTransportCost: manualTransport,
     });
 
+    const cropName = (req.query.cropName || req.query.crop || 'Wheat') as string;
+    const dummyMarket = {
+      id: 'market_query',
+      name: (req.query.marketName as string) || 'Nearby APMC Mandi',
+      location: (req.query.location as string) || 'Local District',
+      distance: distanceKm || 15,
+      cropName,
+      price: modalPrice,
+      minPrice: modalPrice * 0.95,
+      maxPrice: modalPrice * 1.05,
+      priceChange: 0,
+      priceTrend: (req.query.trend as any) || 'stable',
+      transportCost: netReturnCalc.transportCost,
+      commission: netReturnCalc.commissionCost,
+      loadingCost: netReturnCalc.loadingCost,
+      storageCost: 0,
+      expectedWastage: netReturnCalc.wastageCost,
+      netReturn: netReturnCalc.netReturn,
+      riskLevel: (distanceKm && distanceKm > 70 ? 'high' : distanceKm && distanceKm > 30 ? 'medium' : 'low') as 'low' | 'medium' | 'high',
+      demand: 'medium' as const,
+      isRecommended: true,
+      recommendationRank: 1,
+      source: 'CEDA Agmarknet / APMC Yard',
+      lastUpdated: new Date().toISOString(),
+    };
+
+    const sellingDecision = marketService.computeSellingDecision({
+      cropName,
+      quantityQuintals: quantity,
+      markets: [dummyMarket],
+    });
+
     res.json({
       success: true,
       decision: netReturnCalc,
+      sellingDecision,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

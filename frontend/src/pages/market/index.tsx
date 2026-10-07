@@ -20,6 +20,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MarketCard } from '@/components/domain/market-card';
 import { PartialSellingCard } from '@/components/domain/partial-selling-card';
+import { SellingDecisionCard } from '@/components/domain/selling-decision-card';
 import { WhyExplanation } from '@/components/domain/why-explanation';
 import { useMarket } from '@/hooks/useMarket';
 import { useActiveLocation } from '@/context/LocationContext';
@@ -152,7 +153,7 @@ export default function MarketPage() {
   }
 
   if (!data) return null;
-  const { cropName, availableQuantity, markets, partialSelling, whyExplanation, apiStatus, userCoordinates } = data;
+  const { cropName, availableQuantity, markets, partialSelling, whyExplanation, apiStatus, userCoordinates, sellingDecision } = data;
 
   const handlePlaceOrder = async (market: any, quantity: number) => {
     setIsSubmitting(true);
@@ -315,15 +316,26 @@ export default function MarketPage() {
             </CardContent>
           </Card>
 
-          {/* Partial Selling Recommendation */}
-          {partialSelling && markets && markets.length > 0 && (
-            <PartialSellingCard
-              data={partialSelling}
-              onSeeCalculation={() => {
-                const m = markets.find(item => item.id === partialSelling.sellNow.marketId) || markets[0];
-                setSellingModal({ market: m, quantity: partialSelling.sellNow.quantity });
+          {/* Selling Intelligence Decision Engine (Hold / Wait / Sell / Partial Sell) */}
+          {sellingDecision ? (
+            <SellingDecisionCard
+              decision={sellingDecision}
+              totalQuantity={selectedQuantity}
+              onQuickSell={(qty) => {
+                const m = markets.find(item => item.id === partialSelling?.sellNow?.marketId) || markets[0];
+                if (m) setSellingModal({ market: m, quantity: qty });
               }}
             />
+          ) : (
+            partialSelling && markets && markets.length > 0 && (
+              <PartialSellingCard
+                data={partialSelling}
+                onSeeCalculation={() => {
+                  const m = markets.find(item => item.id === partialSelling.sellNow.marketId) || markets[0];
+                  setSellingModal({ market: m, quantity: partialSelling.sellNow.quantity });
+                }}
+              />
+            )
           )}
 
           {/* Quick Sell Modal / Action Box */}

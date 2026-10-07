@@ -37,17 +37,42 @@ export interface MarketComparison {
   lastUpdated: string;
 }
 
+export interface RiskDimension {
+  score: number;
+  level: 'low' | 'medium' | 'high';
+  note: string;
+}
+
 export interface SellingDecision {
-  id: string;
-  type: 'sell_all' | 'sell_partial' | 'hold';
-  cropName: string;
-  totalQuantity: number;
-  sellNowQuantity?: number;
-  holdQuantity?: number;
-  recommendedMarketId?: string;
-  reasonKeys: string[];
-  confidence: number; // 0-100
-  estimatedReturn?: number;
+  action: 'SELL_NOW' | 'HOLD' | 'WAIT' | 'PARTIAL_SELL' | 'INSUFFICIENT_DATA';
+  actionKey: string;
+  badgeVariant: 'success' | 'warning' | 'caution' | 'info';
+  overallRisk: 'low' | 'medium' | 'high' | 'critical';
+  riskScore: number;
+  confidence: 'high' | 'medium' | 'low';
+  confidenceNote: string;
+  primaryMarketName?: string;
+  primaryPrice?: number;
+  expectedNetReturn?: number;
+  effectiveRealizedPrice?: number;
+  timeHorizon?: string;
+  reasons: string[];
+  suggestedAction: string;
+  riskBreakdown?: {
+    marketRisk: RiskDimension;
+    weatherRisk: RiskDimension;
+    storageRisk: RiskDimension;
+    volatilityRisk: RiskDimension;
+    logisticsRisk: RiskDimension;
+  };
+  partialSplit?: {
+    sellNowPercent: number;
+    sellNowQuantity: number;
+    holdPercent: number;
+    holdQuantity: number;
+    sellNowReturn: number;
+    holdEstimatedReturn: number;
+  };
 }
 
 export interface PartialSelling {

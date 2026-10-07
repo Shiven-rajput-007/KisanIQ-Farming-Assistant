@@ -553,7 +553,119 @@ async function runMandiTestSuite() {
   );
 
   // -------------------------------------------------------------
-  // Test 21: Live CEDA Connection & Price Retrieval Check
+  // Test 21: Selling Decision Engine: INSUFFICIENT_DATA on empty markets
+  // -------------------------------------------------------------
+  const emptyDecision = marketService.computeSellingDecision({
+    cropName: 'Wheat',
+    quantityQuintals: 50,
+    markets: [],
+  });
+  assert(
+    emptyDecision.action === 'INSUFFICIENT_DATA' &&
+    emptyDecision.riskScore === 50 &&
+    emptyDecision.badgeVariant === 'info' &&
+    emptyDecision.reasons.length > 0,
+    21,
+    'Selling Decision Engine returns structured INSUFFICIENT_DATA without crashing when markets array is empty'
+  );
+
+  // -------------------------------------------------------------
+  // Test 22: Selling Decision Engine: WAIT triggered by high rain probability / weather transit risk
+  // -------------------------------------------------------------
+  const dummyMarket: any = {
+    id: 'm_1',
+    name: 'Gwalior APMC',
+    price: 2400,
+    distance: 40,
+    netReturn: 110000,
+    priceTrend: 'stable',
+  };
+  const waitDecision = marketService.computeSellingDecision({
+    cropName: 'Wheat',
+    quantityQuintals: 50,
+    markets: [dummyMarket],
+    weatherData: {
+      forecast: [
+        { rainProbability: 85, rainExpectedMm: 35 },
+      ],
+    },
+  });
+  assert(
+    waitDecision.action === 'WAIT' &&
+    waitDecision.badgeVariant === 'caution' &&
+    waitDecision.riskBreakdown.weatherRisk.level === 'high' &&
+    waitDecision.riskBreakdown.weatherRisk.score >= 80,
+    22,
+    'Selling Decision Engine recommends WAIT and identifies high weather risk when severe rain is forecast'
+  );
+
+  // -------------------------------------------------------------
+  // Test 23: Selling Decision Engine: SELL_NOW for perishable crops or falling price trends
+  // -------------------------------------------------------------
+  const perishableDecision = marketService.computeSellingDecision({
+    cropName: 'Tomato',
+    quantityQuintals: 20,
+    markets: [{ ...dummyMarket, priceTrend: 'stable' }],
+    weatherData: { forecast: [{ rainProbability: 10 }] },
+  });
+  const downtrendDecision = marketService.computeSellingDecision({
+    cropName: 'Wheat',
+    quantityQuintals: 50,
+    markets: [{ ...dummyMarket, priceTrend: 'down' }],
+    weatherData: { forecast: [{ rainProbability: 10 }] },
+  });
+  assert(
+    perishableDecision.action === 'SELL_NOW' &&
+    downtrendDecision.action === 'SELL_NOW' &&
+    perishableDecision.badgeVariant === 'success',
+    23,
+    'Selling Decision Engine recommends SELL_NOW for perishables and softening price trends to lock in value'
+  );
+
+  // -------------------------------------------------------------
+  // Test 24: Selling Decision Engine: HOLD for non-perishable grain with upward price trend
+  // -------------------------------------------------------------
+  const holdDecision = marketService.computeSellingDecision({
+    cropName: 'Wheat',
+    quantityQuintals: 50,
+    markets: [{ ...dummyMarket, priceTrend: 'up' }],
+    weatherData: { forecast: [{ rainProbability: 5 }] },
+  });
+  assert(
+    holdDecision.action === 'HOLD' &&
+    holdDecision.badgeVariant === 'warning' &&
+    holdDecision.reasons.some((r) => r.includes('momentum') || r.includes('upward')),
+    24,
+    'Selling Decision Engine recommends HOLD for dry grain when price trend is upward and storage risk is low'
+  );
+
+  // -------------------------------------------------------------
+  // Test 25: Selling Decision Engine: PARTIAL_SELL (60/40 Split) & 5-Factor Risk Breakdown
+  // -------------------------------------------------------------
+  const partialDecision = marketService.computeSellingDecision({
+    cropName: 'Soybean',
+    quantityQuintals: 100,
+    markets: [{ ...dummyMarket, distance: 35, priceTrend: 'stable' }],
+    weatherData: { forecast: [{ rainProbability: 25 }] },
+  });
+  assert(
+    partialDecision.action === 'PARTIAL_SELL' &&
+    partialDecision.partialSplit !== undefined &&
+    partialDecision.partialSplit.sellNowPercent === 60 &&
+    partialDecision.partialSplit.holdPercent === 40 &&
+    partialDecision.partialSplit.sellNowQuantity === 60 &&
+    partialDecision.partialSplit.holdQuantity === 40 &&
+    partialDecision.riskBreakdown.marketRisk !== undefined &&
+    partialDecision.riskBreakdown.weatherRisk !== undefined &&
+    partialDecision.riskBreakdown.storageRisk !== undefined &&
+    partialDecision.riskBreakdown.volatilityRisk !== undefined &&
+    partialDecision.riskBreakdown.logisticsRisk !== undefined,
+    25,
+    'Selling Decision Engine recommends PARTIAL_SELL (60/40 split) and computes 5-factor risk breakdown'
+  );
+
+  // -------------------------------------------------------------
+  // Test 26: Live CEDA Connection & Price Retrieval Check
   // -------------------------------------------------------------
   const apiKey = mandiService.getApiKey();
   if (apiKey) {
@@ -561,21 +673,21 @@ async function runMandiTestSuite() {
       console.log('  Testing live connection to CEDA Agmarknet API...');
       const commodities = await mandiService.fetchCedaCommodities();
       if (Array.isArray(commodities) && commodities.length > 0) {
-        console.log(`  ✅ PASS [Test 21]: CEDA Live Connection: Retrieved ${commodities.length} commodities`);
+        console.log(`  ✅ PASS [Test 26]: CEDA Live Connection: Retrieved ${commodities.length} commodities`);
         passed++;
       } else {
-        console.error('  ❌ FAIL [Test 21]: CEDA Live Connection returned empty commodities array');
+        console.error('  ❌ FAIL [Test 26]: CEDA Live Connection returned empty commodities array');
         failed++;
       }
     } catch (err: any) {
-      console.error('  ❌ FAIL [Test 21]: CEDA Live Connection error:', err.message);
+      console.error('  ❌ FAIL [Test 26]: CEDA Live Connection error:', err.message);
       failed++;
     }
   } else {
     // Explicit requirement: If a live API test cannot be executed because a credential is missing,
     // DO NOT fake the result. Instead report: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.
     // Do not mark it passed.
-    console.log('  ⚠️  [Test 21]: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.');
+    console.log('  ⚠️  [Test 26]: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.');
     blocked++;
   }
 

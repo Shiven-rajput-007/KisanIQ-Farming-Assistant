@@ -106,5 +106,25 @@
     "Bajra": "बाजरा",
     "Jowar": "ज्वार",
     "Groundnut": "मूंगफली"
+  },
+  "decision": {
+    "action_sell_now": "अभी बेचें",
+    "tagline_sell_now": "अधिकतम शुद्ध मुनाफा",
+    "action_hold": "रोक कर रखें",
+    "tagline_hold": "भाव बढ़ने का रुझान",
+    "action_wait": "प्रतीक्षा करें",
+    "tagline_wait": "मौसम व परिवहन चेतावनी",
+    "action_partial_sell": "आंशिक बिक्री (60/40)",
+    "tagline_partial_sell": "संतुलित जोखिम प्रबंधन",
+    "action_insufficient_data": "डेटा प्रतीक्षित",
+    "tagline_insufficient_data": "एगमार्कनेट समन्वय जारी",
+    "risk_score": "जोखिम स्कोर",
+    "top_mandi": "सुझाई गई मंडी",
+    "net_realization": "शुद्ध प्राप्ति भाव",
+    "total_net_return": "अनुमानित कुल शुद्ध आय",
+    "action_recommendation": "व्यावहारिक सलाह",
+    "strategy_6040": "अनुशंसित 60/40 विभाजन रणनीति",
+    "why_drivers_title": "निर्णय के आर्थिक व मौसमी कारण (\"क्यों?\")",
+    "risk_dimensions_title": "5-कारक जोखिम विश्लेषण"
   }
 }

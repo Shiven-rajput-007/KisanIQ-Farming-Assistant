@@ -92,24 +92,41 @@ function MarketCard({ market, rank, onWhyClick, onClick, className }: MarketCard
           </div>
         )}
 
-        {/* Details grid */}
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-sand-600 flex items-center gap-1.5">
-              <Truck className="h-3.5 w-3.5" />
-              {t('card.transport')}
-            </span>
-            <span className="font-medium text-sand-900">₹{formatIndianNumber(market.transportCost)}</span>
+          {/* Details grid */}
+          <div className="space-y-1.5 text-xs sm:text-sm">
+            <div className="flex justify-between">
+              <span className="text-sand-600 flex items-center gap-1.5">
+                <Truck className="h-3.5 w-3.5" />
+                {t('card.transport')}
+              </span>
+              <span className="font-medium text-sand-900">₹{formatIndianNumber(market.transportCost)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sand-600">{t('card.commission')}</span>
+              <span className="font-medium text-sand-900">{market.commission}%</span>
+            </div>
+            {market.loadingCost !== undefined && market.loadingCost > 0 && (
+              <div className="flex justify-between">
+                <span className="text-sand-600">{t('card.loading', { defaultValue: 'Loading / Unloading' })}</span>
+                <span className="font-medium text-sand-900">₹{formatIndianNumber(market.loadingCost)}</span>
+              </div>
+            )}
+            {market.expectedWastage !== undefined && market.expectedWastage > 0 && (
+              <div className="flex justify-between">
+                <span className="text-sand-600">{t('card.wastage', { defaultValue: 'Expected Transit Loss' })}</span>
+                <span className="font-medium text-sand-900">{market.expectedWastage}%</span>
+              </div>
+            )}
+            <div className="pt-2 border-t border-sand-200 flex justify-between items-baseline">
+              <div>
+                <span className="text-sand-700 font-bold block">{t('card.net_return')}</span>
+                <span className="text-[10px] text-sand-500 font-normal">
+                  (Modal Price − Logistics & APMC Deductions)
+                </span>
+              </div>
+              <span className="text-lg font-extrabold text-agri-forest-800">₹{formatIndianNumber(market.netReturn)}</span>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-sand-600">{t('card.commission')}</span>
-            <span className="font-medium text-sand-900">{market.commission}%</span>
-          </div>
-          <div className="pt-2 border-t border-sand-200 flex justify-between">
-            <span className="text-sand-700 font-semibold">{t('card.net_return')}</span>
-            <span className="text-lg font-bold text-agri-forest-800">₹{formatIndianNumber(market.netReturn)}</span>
-          </div>
-        </div>
 
         {/* Why CTA */}
         {onWhyClick && (

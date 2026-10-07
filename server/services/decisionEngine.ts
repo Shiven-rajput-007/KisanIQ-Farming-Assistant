@@ -245,27 +245,30 @@ export class DecisionEngine {
       if (soilReport && soilReport.evaluation) {
         const evalSummary = soilReport.evaluation;
         if (evalSummary.deficienciesMr.length > 0) {
+          const defText = (evalSummary.deficienciesEn && evalSummary.deficienciesEn.length > 0)
+            ? evalSummary.deficienciesEn.join(', ')
+            : 'Nutrient deficiencies';
           recommendations.push({
             id: 'rec_soil_1',
             actionCode: 'SOIL_NUTRIENT_MANAGEMENT',
             category: 'crop_health',
             icon: '🧪',
             titleKey: 'soil_nutrient_management',
-            descriptionKey: `माती परीक्षणानुसार: ${evalSummary.deficienciesMr.join(', ')} आढळली आहे. पिकाच्या पोषणासाठी सेंद्रिय किंवा शिफारस केलेली खते वेळेवर द्या.`,
+            descriptionKey: `Soil Test Analysis: ${defText} detected. Apply balanced organic or recommended fertilizers timely for crop vigor.`,
             status: 'recommended',
             priority: 2,
             riskLevel: 'medium',
             timing: 'today',
             whyExplanation: {
-              summaryKey: 'माती आरोग्य अहवाल विश्लेषण (Why soil management?)',
+              summaryKey: 'Soil Health Card Nutrient Analysis',
               dataPoints: [
-                { icon: '🧪', labelKey: 'मातीचा pH', value: soilReport.ph },
-                { icon: '🌿', labelKey: 'नायट्रोजन (N)', value: `${soilReport.nitrogenKgHa} kg/ha` },
-                { icon: '🌾', labelKey: 'फॉस्फरस (P)', value: `${soilReport.phosphorusKgHa} kg/ha` },
-                { icon: '🌱', labelKey: 'सेंद्रिय कर्ब (OC)', value: `${soilReport.organicCarbon}%` },
+                { icon: '🧪', labelKey: 'Soil pH', value: soilReport.ph },
+                { icon: '🌿', labelKey: 'Nitrogen (N)', value: `${soilReport.nitrogenKgHa} kg/ha` },
+                { icon: '🌾', labelKey: 'Phosphorus (P)', value: `${soilReport.phosphorusKgHa} kg/ha` },
+                { icon: '🌱', labelKey: 'Organic Carbon', value: `${soilReport.organicCarbon}%` },
               ],
-              conclusionKey: evalSummary.recommendationsMr[0] || 'संतुलित खत व्यवस्थापनाने पिकाचे उत्पादन व जमिनीची सुपीकता टिकवून ठेवा.',
-              advancedDetails: `प्रयोगशाळा: ${soilReport.labName || 'Accredited Soil Lab'}. नमुना क्रमांक: ${soilReport.requestId || 'MH-SOIL'}.`,
+              conclusionKey: evalSummary.recommendationsEn?.[0] || 'Maintain balanced nutrient management to sustain crop yield and soil fertility.',
+              advancedDetails: `Lab: ${soilReport.labName || 'Accredited Soil Lab'}. Sample ID: ${soilReport.requestId || 'SHC-SOIL'}.`,
             },
           });
         }

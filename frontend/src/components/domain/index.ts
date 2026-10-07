@@ -7,6 +7,7 @@ export { CropTimeline } from './crop-timeline';
 export { CropHealthGrid } from './crop-health-grid';
 export { MarketCard } from './market-card';
 export { PartialSellingCard } from './partial-selling-card';
+export { SellingDecisionCard } from './selling-decision-card';
 export { RiskOverview } from './risk-overview';
 export { WhyExplanation } from './why-explanation';
 export { ChatSuggestionChip } from './chat-suggestion';

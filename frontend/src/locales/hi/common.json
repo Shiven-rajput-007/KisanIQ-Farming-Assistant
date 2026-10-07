@@ -56,7 +56,8 @@
     "offline_title": "आप ऑफलाइन हैं",
     "offline_description": "पिछली उपलब्ध जानकारी दिखाई जा रही है।",
     "empty_title": "अभी कुछ नहीं है",
-    "demo_label": "डेमो डेटा"
+    "demo_label": "डेमो डेटा",
+    "active": "सक्रिय"
   },
   "language": {
     "title": "भाषा चुनें",
