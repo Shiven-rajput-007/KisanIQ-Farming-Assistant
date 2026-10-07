@@ -249,3 +249,151 @@ export async function createSellOrder(req: AuthRequest, res: Response): Promise<
     res.status(500).json({ success: false, error: error.message });
   }
 }
+
+/**
+ * GET /api/market/diagnostics
+ * Safe live diagnostic probe for CEDA Agmarknet upstream integration
+ * NEVER exposes API keys
+ */
+export async function getMarketDiagnostics(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { commodity = 'Wheat', state = 'Madhya Pradesh', district = 'Gwalior' } = req.query;
+
+    const resolvedComm = await mandiService.resolveCommodity(String(commodity));
+    const resolvedSt = mandiService.resolveState(String(state));
+    const resolvedDist = await mandiService.resolveDistrict(String(district), resolvedSt?.stateId, resolvedComm?.id);
+
+    const isConfigured = mandiService.isConfigured();
+    const baseUrl = mandiService.getBaseUrl();
+    const apiKeyPresent = Boolean(process.env.CEDA_API_KEY && process.env.CEDA_API_KEY.trim() !== '');
+
+    const probes: any[] = [];
+
+    if (isConfigured) {
+      // Probe 1: Commodities
+      const t0 = Date.now();
+      try {
+        const comms = await mandiService.fetchCedaCommodities();
+        probes.push({
+          endpoint: '/agmarknet/commodities',
+          method: 'GET',
+          status: 200,
+          durationMs: Date.now() - t0,
+          recordCount: comms.length,
+          sample: comms.slice(0, 3),
+        });
+      } catch (cErr: any) {
+        probes.push({
+          endpoint: '/agmarknet/commodities',
+          method: 'GET',
+          status: 0,
+          durationMs: Date.now() - t0,
+          error: cErr.message,
+        });
+      }
+
+      // Probe 2: Geographies
+      if (resolvedComm) {
+        const t1 = Date.now();
+        try {
+          const geos = await mandiService.fetchCedaGeographies(resolvedComm.id);
+          probes.push({
+            endpoint: `/agmarknet/geographies?commodity_id=${resolvedComm.id}`,
+            method: 'GET',
+            status: 200,
+            durationMs: Date.now() - t1,
+            recordCount: geos.length,
+            sampleStateCount: geos.length,
+          });
+        } catch (gErr: any) {
+          probes.push({
+            endpoint: `/agmarknet/geographies?commodity_id=${resolvedComm.id}`,
+            method: 'GET',
+            status: 0,
+            durationMs: Date.now() - t1,
+            error: gErr.message,
+          });
+        }
+      }
+
+      // Probe 3: Prices with Dynamic Windows (Tier 1 District, Tier 2 State, Tier 3 National)
+      const t2 = Date.now();
+      try {
+        const priceResult = await mandiService.fetchPricesWithDynamicWindows({
+          commodityId: resolvedComm?.id || 1,
+          stateId: resolvedSt?.stateId || 23,
+          districtIds: resolvedDist?.districtId ? [resolvedDist.districtId] : undefined,
+        });
+        probes.push({
+          endpoint: '/agmarknet/prices',
+          method: 'POST',
+          tier: resolvedDist?.districtId ? 'Tier 1 (District)' : 'Tier 2 (State)',
+          durationMs: Date.now() - t2,
+          recordCount: priceResult.records.length,
+          usedWindow: priceResult.usedWindow,
+          sampleRecords: priceResult.records.slice(0, 3).map((r) => ({
+            date: r.date,
+            commodity_id: r.commodity_id,
+            market_id: r.market_id,
+            modal_price: r.modal_price,
+            min_price: r.min_price,
+            max_price: r.max_price,
+          })),
+          error: priceResult.lastError,
+        });
+
+        // If District had 0 records, probe State level
+        if (priceResult.records.length === 0 && resolvedSt?.stateId) {
+          const t3 = Date.now();
+          const statePriceResult = await mandiService.fetchPricesWithDynamicWindows({
+            commodityId: resolvedComm?.id || 1,
+            stateId: resolvedSt.stateId,
+          });
+          probes.push({
+            endpoint: '/agmarknet/prices',
+            method: 'POST',
+            tier: 'Tier 2 (State-level probe)',
+            durationMs: Date.now() - t3,
+            recordCount: statePriceResult.records.length,
+            usedWindow: statePriceResult.usedWindow,
+            sampleRecords: statePriceResult.records.slice(0, 3).map((r) => ({
+              date: r.date,
+              commodity_id: r.commodity_id,
+              market_id: r.market_id,
+              modal_price: r.modal_price,
+              min_price: r.min_price,
+              max_price: r.max_price,
+            })),
+            error: statePriceResult.lastError,
+          });
+        }
+      } catch (pErr: any) {
+        probes.push({
+          endpoint: '/agmarknet/prices',
+          method: 'POST',
+          status: 0,
+          durationMs: Date.now() - t2,
+          error: pErr.message,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      diagnosticTime: new Date().toISOString(),
+      cedaApiConfigured: isConfigured,
+      apiKeyPresent,
+      baseUrl,
+      resolved: {
+        commodity: resolvedComm,
+        state: resolvedSt,
+        district: resolvedDist,
+      },
+      upstreamProbes: probes,
+      lastUpstreamInfo: mandiService.getLastUpstreamInfo(),
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+

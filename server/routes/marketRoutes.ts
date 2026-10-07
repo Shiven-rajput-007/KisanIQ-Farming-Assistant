@@ -7,6 +7,7 @@ import {
   getSyncStatus,
   triggerMandiSync,
   createSellOrder,
+  getMarketDiagnostics,
 } from '../controllers/marketController.js';
 import { optionalAuth } from '../middleware/auth.js';
 
@@ -14,6 +15,9 @@ const router = Router();
 
 // Official Agmarknet verified prices
 router.get('/prices', optionalAuth, getMarketPrices);
+
+// Safe live CEDA diagnostics probe
+router.get('/diagnostics', optionalAuth, getMarketDiagnostics);
 
 // List of physical APMC mandis
 router.get('/mandis', optionalAuth, getMandis);

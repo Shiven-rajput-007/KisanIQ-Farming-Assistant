@@ -524,7 +524,36 @@ async function runMandiTestSuite() {
   );
 
   // -------------------------------------------------------------
-  // Test 19: Live CEDA Connection & Price Retrieval Check
+  // Test 19: API Key Sanitization (Stripping Quotes & Redundant Bearer Prefix)
+  // -------------------------------------------------------------
+  const prevKey = process.env.CEDA_API_KEY;
+  try {
+    process.env.CEDA_API_KEY = '  "Bearer mock_ceda_jwt_token_123"  ';
+    const cleanedKey = mandiService.getApiKey();
+    assert(
+      cleanedKey === 'mock_ceda_jwt_token_123',
+      19,
+      'API key parser sanitizes quotes, trims whitespace, and strips redundant Bearer prefix'
+    );
+  } finally {
+    if (prevKey !== undefined) {
+      process.env.CEDA_API_KEY = prevKey;
+    } else {
+      delete process.env.CEDA_API_KEY;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Test 20: Dynamic Date Windows Query Method Presence & Fallback
+  // -------------------------------------------------------------
+  assert(
+    typeof mandiService.fetchPricesWithDynamicWindows === 'function',
+    20,
+    'MandiService exposes dynamic date-window expansion method (fetchPricesWithDynamicWindows)'
+  );
+
+  // -------------------------------------------------------------
+  // Test 21: Live CEDA Connection & Price Retrieval Check
   // -------------------------------------------------------------
   const apiKey = mandiService.getApiKey();
   if (apiKey) {
@@ -532,21 +561,21 @@ async function runMandiTestSuite() {
       console.log('  Testing live connection to CEDA Agmarknet API...');
       const commodities = await mandiService.fetchCedaCommodities();
       if (Array.isArray(commodities) && commodities.length > 0) {
-        console.log(`  ✅ PASS [Test 19]: CEDA Live Connection: Retrieved ${commodities.length} commodities`);
+        console.log(`  ✅ PASS [Test 21]: CEDA Live Connection: Retrieved ${commodities.length} commodities`);
         passed++;
       } else {
-        console.error('  ❌ FAIL [Test 19]: CEDA Live Connection returned empty commodities array');
+        console.error('  ❌ FAIL [Test 21]: CEDA Live Connection returned empty commodities array');
         failed++;
       }
     } catch (err: any) {
-      console.error('  ❌ FAIL [Test 19]: CEDA Live Connection error:', err.message);
+      console.error('  ❌ FAIL [Test 21]: CEDA Live Connection error:', err.message);
       failed++;
     }
   } else {
     // Explicit requirement: If a live API test cannot be executed because a credential is missing,
     // DO NOT fake the result. Instead report: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.
     // Do not mark it passed.
-    console.log('  ⚠️  [Test 19]: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.');
+    console.log('  ⚠️  [Test 21]: LIVE CEDA TEST BLOCKED — CEDA_API_KEY required.');
     blocked++;
   }
 

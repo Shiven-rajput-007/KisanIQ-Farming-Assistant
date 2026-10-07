@@ -138,13 +138,56 @@ export class MandiService {
     this.seedStandardLookups();
   }
 
+  private lastUpstreamInfo: {
+    endpoint?: string;
+    method?: string;
+    status?: number;
+    durationMs?: number;
+    recordsCount?: number;
+    safeError?: string;
+    timestamp?: string;
+    requestSummary?: any;
+  } = {};
+
+  /**
+   * Safe getter for last upstream CEDA request metadata
+   */
+  public getLastUpstreamInfo() {
+    return { ...this.lastUpstreamInfo };
+  }
+
   /**
    * Safely log CEDA external API requests without leaking API keys
    */
-  private logCedaRequest(endpoint: string, status: number, durationMs: number, count?: number): void {
-    console.log(
-      `[CEDA] ${endpoint} status=${status} duration=${durationMs}ms${count !== undefined ? ` count=${count}` : ''}`
-    );
+  private logCedaRequest(
+    endpoint: string,
+    status: number,
+    durationMs: number,
+    count?: number,
+    extra?: { method?: string; error?: string; safeParams?: any }
+  ): void {
+    this.lastUpstreamInfo = {
+      endpoint,
+      method: extra?.method || 'GET',
+      status,
+      durationMs,
+      recordsCount: count,
+      safeError: extra?.error,
+      timestamp: new Date().toISOString(),
+      requestSummary: extra?.safeParams,
+    };
+
+    const details = [
+      `status=${status}`,
+      `duration=${durationMs}ms`,
+      count !== undefined ? `count=${count}` : null,
+      extra?.safeParams ? `params=${JSON.stringify(extra.safeParams)}` : null,
+      extra?.error ? `error="${extra.error}"` : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    console.log(`[CEDA Agmarknet] ${extra?.method || 'GET'} ${endpoint} ${details}`);
   }
 
   /**
@@ -705,8 +748,14 @@ export class MandiService {
   }
 
   public getApiKey(): string | undefined {
-    const key = process.env.CEDA_API_KEY;
-    return key && key.trim() !== '' ? key.trim() : undefined;
+    const raw = process.env.CEDA_API_KEY;
+    if (!raw || typeof raw !== 'string') return undefined;
+    let cleaned = raw.trim();
+    // Strip single or double quotes
+    cleaned = cleaned.replace(/^["']|["']$/g, '').trim();
+    // Strip redundant "Bearer " prefix if provided in environment variable
+    cleaned = cleaned.replace(/^Bearer\s+/i, '').trim();
+    return cleaned !== '' ? cleaned : undefined;
   }
 
   public isConfigured(): boolean {
@@ -874,15 +923,21 @@ export class MandiService {
       signal: AbortSignal.timeout(10000),
     });
     const duration = Date.now() - startTime;
+    const json: any = await response.json().catch(() => ({}));
+    const commodities: CedaCommodity[] = Array.isArray(json?.commodities) ? json.commodities : [];
+    const safeErrorMsg = !response.ok
+      ? json?.message || json?.error || json?.detail || response.statusText || 'Unknown CEDA Error'
+      : undefined;
 
-    this.logCedaRequest('/agmarknet/commodities', response.status, duration);
+    this.logCedaRequest('/agmarknet/commodities', response.status, duration, commodities.length, {
+      method: 'GET',
+      error: safeErrorMsg,
+    });
 
     if (!response.ok) {
-      throw new Error(`CEDA Agmarknet API /commodities responded with HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`CEDA Agmarknet API /commodities responded with HTTP ${response.status}: ${safeErrorMsg}`);
     }
 
-    const json: any = await response.json();
-    const commodities: CedaCommodity[] = json?.commodities || [];
     for (const c of commodities) {
       this.commodityIdMap.set(c.id, c.name);
       this.commodityNameMap.set(c.name.toLowerCase(), c.id);
@@ -917,14 +972,22 @@ export class MandiService {
     });
     const duration = Date.now() - startTime;
 
-    this.logCedaRequest('/agmarknet/geographies', response.status, duration);
+    const json: any = await response.json().catch(() => ({}));
+    const geographies: CedaGeography[] = Array.isArray(json?.geographies) ? json.geographies : [];
+    const safeErrorMsg = !response.ok
+      ? json?.message || json?.error || json?.detail || response.statusText || 'Unknown CEDA Error'
+      : undefined;
+
+    this.logCedaRequest('/agmarknet/geographies', response.status, duration, geographies.length, {
+      method: 'GET',
+      error: safeErrorMsg,
+      safeParams: { commodityId },
+    });
 
     if (!response.ok) {
-      throw new Error(`CEDA Agmarknet API /geographies responded with HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`CEDA Agmarknet API /geographies responded with HTTP ${response.status}: ${safeErrorMsg}`);
     }
 
-    const json: any = await response.json();
-    const geographies: CedaGeography[] = json?.geographies || [];
     for (const g of geographies) {
       this.stateIdMap.set(g.state_id, g.state_name);
       this.stateNameMap.set(g.state_name.toLowerCase(), g.state_id);
@@ -958,6 +1021,13 @@ export class MandiService {
 
     const url = `${this.getBaseUrl()}/agmarknet/markets`;
     const startTime = Date.now();
+    const body = {
+      commodity_id: Number(commodityId),
+      state_id: Number(stateId),
+      district_id: Number(districtId),
+      indicator,
+    };
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -965,24 +1035,27 @@ export class MandiService {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({
-        commodity_id: commodityId,
-        state_id: stateId,
-        district_id: districtId,
-        indicator,
-      }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(10000),
     });
     const duration = Date.now() - startTime;
 
-    this.logCedaRequest('/agmarknet/markets', response.status, duration);
+    const json: any = await response.json().catch(() => ({}));
+    const data: CedaMarket[] = Array.isArray(json?.data) ? json.data : [];
+    const safeErrorMsg = !response.ok
+      ? json?.message || json?.error || json?.detail || response.statusText || 'Unknown CEDA Error'
+      : undefined;
+
+    this.logCedaRequest('/agmarknet/markets', response.status, duration, data.length, {
+      method: 'POST',
+      error: safeErrorMsg,
+      safeParams: body,
+    });
 
     if (!response.ok) {
-      throw new Error(`CEDA Agmarknet API /markets responded with HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`CEDA Agmarknet API /markets responded with HTTP ${response.status}: ${safeErrorMsg}`);
     }
 
-    const json: any = await response.json();
-    const data: CedaMarket[] = json?.data || [];
     for (const m of data) {
       this.marketIdMap.set(m.market_id, m.market_name);
       this.marketNameMap.set(m.market_name.toLowerCase(), m.market_id);
@@ -1010,40 +1083,141 @@ export class MandiService {
 
     const url = `${this.getBaseUrl()}/agmarknet/prices`;
     const body: any = {
-      commodity_id: params.commodityId,
-      state_id: params.stateId,
+      commodity_id: Number(params.commodityId),
+      state_id: Number(params.stateId),
       from_date: params.fromDate,
       to_date: params.toDate,
     };
     if (params.districtIds && params.districtIds.length > 0) {
-      body.district_id = params.districtIds;
+      body.district_id = params.districtIds.map(Number);
     }
     if (params.marketIds && params.marketIds.length > 0) {
-      body.market_id = params.marketIds;
+      body.market_id = params.marketIds.map(Number);
     }
+
+    const safeParams = {
+      commodity_id: body.commodity_id,
+      state_id: body.state_id,
+      district_id: body.district_id,
+      market_id: body.market_id,
+      from_date: body.from_date,
+      to_date: body.to_date,
+    };
 
     const startTime = Date.now();
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
-    });
-    const duration = Date.now() - startTime;
-
-    const json: any = await response.json().catch(() => ({}));
-    const recordCount = Array.isArray(json?.data) ? json.data.length : 0;
-    this.logCedaRequest('/agmarknet/prices', response.status, duration, recordCount);
-
-    if (!response.ok) {
-      throw new Error(`CEDA Agmarknet API /prices responded with HTTP ${response.status}: ${response.statusText}`);
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (networkErr: any) {
+      const duration = Date.now() - startTime;
+      const errMsg = networkErr.name === 'TimeoutError' ? 'Request timed out after 15s' : networkErr.message;
+      this.logCedaRequest('/agmarknet/prices', 0, duration, 0, {
+        method: 'POST',
+        error: errMsg,
+        safeParams,
+      });
+      throw new Error(`CEDA Agmarknet API /prices network failure: ${errMsg}`);
     }
 
-    return json?.data || [];
+    const duration = Date.now() - startTime;
+    const json: any = await response.json().catch(() => ({}));
+    const recordCount = Array.isArray(json?.data) ? json.data.length : 0;
+    const safeErrorMsg = !response.ok
+      ? json?.message || json?.error || json?.detail || response.statusText || 'Unknown CEDA Error'
+      : undefined;
+
+    this.logCedaRequest('/agmarknet/prices', response.status, duration, recordCount, {
+      method: 'POST',
+      error: safeErrorMsg,
+      safeParams,
+    });
+
+    if (!response.ok) {
+      throw new Error(`CEDA Agmarknet API /prices responded with HTTP ${response.status}: ${safeErrorMsg}`);
+    }
+
+    return Array.isArray(json?.data) ? json.data : [];
+  }
+
+  /**
+   * Queries CEDA /agmarknet/prices with dynamic date-window expansion:
+   * Window 1: Recent window (last 30 days)
+   * Window 2: Seasonal window (last 365 days, capturing Rabi/Kharif harvest bulletins)
+   * Window 3: Historical archive window (from 2023-01-01 to present)
+   */
+  public async fetchPricesWithDynamicWindows(params: {
+    commodityId: number;
+    stateId: number;
+    districtIds?: number[];
+    explicitFromDate?: string;
+    explicitToDate?: string;
+  }): Promise<{ records: any[]; usedWindow: string; lastError?: string }> {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // If explicit dates provided by caller, query that specific window
+    if (params.explicitFromDate && params.explicitToDate) {
+      try {
+        const records = await this.fetchCedaPrices({
+          commodityId: params.commodityId,
+          stateId: params.stateId,
+          districtIds: params.districtIds,
+          fromDate: params.explicitFromDate,
+          toDate: params.explicitToDate,
+        });
+        return { records, usedWindow: `${params.explicitFromDate}..${params.explicitToDate}` };
+      } catch (err: any) {
+        return { records: [], usedWindow: `${params.explicitFromDate}..${params.explicitToDate}`, lastError: err.message };
+      }
+    }
+
+    const d30Ago = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const d365Ago = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const dArchive = '2023-01-01';
+
+    const windows = [
+      { name: '30-day recent', fromDate: d30Ago, toDate: todayStr },
+      { name: '365-day seasonal', fromDate: d365Ago, toDate: todayStr },
+      { name: 'archive (from 2023)', fromDate: dArchive, toDate: todayStr },
+    ];
+
+    let lastError: string | undefined = undefined;
+
+    for (const win of windows) {
+      try {
+        const records = await this.fetchCedaPrices({
+          commodityId: params.commodityId,
+          stateId: params.stateId,
+          districtIds: params.districtIds,
+          fromDate: win.fromDate,
+          toDate: win.toDate,
+        });
+
+        if (Array.isArray(records) && records.length > 0) {
+          console.log(
+            `[CEDA Agmarknet] Window "${win.name}" (${win.fromDate}..${win.toDate}) returned ${records.length} records for commodity ${params.commodityId} (state: ${params.stateId})`
+          );
+          return { records, usedWindow: win.name };
+        }
+      } catch (err: any) {
+        lastError = err.message;
+        console.warn(`[CEDA Agmarknet] Window "${win.name}" notice:`, err.message);
+        // If authentication failed (401), stop immediately — other windows won't help
+        if (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('expired')) {
+          return { records: [], usedWindow: win.name, lastError };
+        }
+      }
+    }
+
+    return { records: [], usedWindow: 'none', lastError };
   }
 
   /**
@@ -1457,10 +1631,15 @@ export class MandiService {
     this.activeSyncPromises.set(scopeKey, syncPromise);
 
     try {
-      return await syncPromise;
+      const result = await syncPromise;
+      if (result.fetchedCount > 0) {
+        this.lastSyncTimeByScope.set(scopeKey, Date.now());
+      } else {
+        this.lastSyncTimeByScope.delete(scopeKey);
+      }
+      return result;
     } finally {
       this.activeSyncPromises.delete(scopeKey);
-      this.lastSyncTimeByScope.set(scopeKey, Date.now());
     }
   }
 
@@ -1542,63 +1721,74 @@ export class MandiService {
         }
       }
 
-      // 5. Date Window: Look back 30 days to capture real verified arrival bulletins
-      const toDate = options?.toDate || new Date().toISOString().split('T')[0];
-      const fromDate =
-        options?.fromDate ||
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-      // 6. Tiered Search Strategy against CEDA:
-      // Tier 1: Try District if specified
+      // 5. Tiered Search Strategy against CEDA with Dynamic Date Windows:
       let priceRecords: any[] = [];
+      const tierErrors: string[] = [];
+      let successfulTier: string = 'none';
+      let successfulWindow: string = 'none';
+
+      // Tier 1: Try District if specified
       if (stateId > 0 && districtId) {
-        try {
-          priceRecords = await this.fetchCedaPrices({
-            commodityId,
-            stateId,
-            districtIds: [districtId],
-            fromDate,
-            toDate,
-          });
-        } catch (t1Err: any) {
-          console.warn('[MandiSync] Tier 1 (District) fetch notice:', t1Err.message);
+        const resT1 = await this.fetchPricesWithDynamicWindows({
+          commodityId,
+          stateId,
+          districtIds: [districtId],
+          explicitFromDate: options?.fromDate,
+          explicitToDate: options?.toDate,
+        });
+        if (resT1.records.length > 0) {
+          priceRecords = resT1.records;
+          successfulTier = `Tier 1 (District: ${resolvedDistrictName || districtId})`;
+          successfulWindow = resT1.usedWindow;
+        } else if (resT1.lastError) {
+          tierErrors.push(`Tier 1 (${resolvedDistrictName || districtId}): ${resT1.lastError}`);
         }
       }
 
       // Tier 2: If 0 records from district, broaden to entire State in CEDA
       if (priceRecords.length === 0 && stateId > 0) {
-        try {
-          priceRecords = await this.fetchCedaPrices({
-            commodityId,
-            stateId,
-            fromDate,
-            toDate,
-          });
-        } catch (t2Err: any) {
-          console.warn('[MandiSync] Tier 2 (State) fetch notice:', t2Err.message);
+        const resT2 = await this.fetchPricesWithDynamicWindows({
+          commodityId,
+          stateId,
+          explicitFromDate: options?.fromDate,
+          explicitToDate: options?.toDate,
+        });
+        if (resT2.records.length > 0) {
+          priceRecords = resT2.records;
+          successfulTier = `Tier 2 (State: ${resolvedStateName || stateId})`;
+          successfulWindow = resT2.usedWindow;
+        } else if (resT2.lastError) {
+          tierErrors.push(`Tier 2 (${resolvedStateName || stateId}): ${resT2.lastError}`);
         }
       }
 
       // Tier 3: If 0 records from state, broaden to National in CEDA (state_id: 0)
       if (priceRecords.length === 0) {
-        try {
-          priceRecords = await this.fetchCedaPrices({
-            commodityId,
-            stateId: 0,
-            fromDate,
-            toDate,
-          });
-        } catch (t3Err: any) {
-          console.warn('[MandiSync] Tier 3 (National) fetch notice:', t3Err.message);
+        const resT3 = await this.fetchPricesWithDynamicWindows({
+          commodityId,
+          stateId: 0,
+          explicitFromDate: options?.fromDate,
+          explicitToDate: options?.toDate,
+        });
+        if (resT3.records.length > 0) {
+          priceRecords = resT3.records;
+          successfulTier = 'Tier 3 (National)';
+          successfulWindow = resT3.usedWindow;
+        } else if (resT3.lastError) {
+          tierErrors.push(`Tier 3 (National): ${resT3.lastError}`);
         }
       }
+
+      console.log(
+        `[MandiSync] Ingestion search completed for "${resolvedCommodityName}" (${scopeKey}): tier=${successfulTier}, window=${successfulWindow}, records=${priceRecords.length}${tierErrors.length > 0 ? `, notices=${JSON.stringify(tierErrors)}` : ''}`
+      );
 
       const fetchedCount = priceRecords.length;
       let insertedCount = 0;
       let updatedCount = 0;
       let rejectedCount = 0;
 
-      // 7. Resolve and ingest records
+      // 6. Resolve and ingest records
       if (priceRecords.length > 0) {
         // Collect distinct (commId, sId, dId) tuples to pre-load market names
         const missingMarketTuples = new Set<string>();
@@ -1678,23 +1868,33 @@ export class MandiService {
       }
 
       const completedAt = new Date().toISOString();
+      const finalStatus: 'success' | 'failed' = fetchedCount > 0 ? 'success' : (tierErrors.length > 0 ? 'failed' : 'success');
+      const finalErrorMessage: string | null =
+        tierErrors.length > 0
+          ? tierErrors.join('; ')
+          : fetchedCount === 0
+          ? `No arrival bulletins returned by CEDA for "${resolvedCommodityName}" across available date windows`
+          : null;
+
       await db.query(
         `UPDATE mandi_sync_logs
-         SET completed_at = $1, status = 'success', fetched_count = $2,
-             inserted_count = $3, updated_count = $4, rejected_count = $5
-         WHERE id = $6`,
-        [completedAt, fetchedCount, insertedCount, updatedCount, rejectedCount, syncId]
+         SET completed_at = $1, status = $2, fetched_count = $3,
+             inserted_count = $4, updated_count = $5, rejected_count = $6,
+             error_message = $7
+         WHERE id = $8`,
+        [completedAt, finalStatus, fetchedCount, insertedCount, updatedCount, rejectedCount, finalErrorMessage, syncId]
       );
 
       return {
         startedAt,
         completedAt,
-        status: 'success',
+        status: finalStatus,
         source: 'CEDA Agmarknet',
         fetchedCount,
         insertedCount,
         updatedCount,
         rejectedCount,
+        errorMessage: finalErrorMessage || undefined,
       };
     } catch (err: any) {
       const completedAt = new Date().toISOString();
@@ -1736,6 +1936,13 @@ export class MandiService {
       isStale: boolean;
       freshnessPolicy: string;
       cedaApiConfigured: boolean;
+      scope?: 'district' | 'state' | 'national';
+      scopeNote?: string;
+      resolvedCommodity?: { id?: number; name: string };
+      resolvedState?: { id?: number; name: string };
+      resolvedDistrict?: { id?: number; name: string };
+      lastUpstreamStatus?: number;
+      lastUpstreamReason?: string;
     };
   }> {
     const page = Math.max(1, filter.page || 1);
@@ -1850,6 +2057,92 @@ export class MandiService {
       }
     }
 
+    let queryScope: 'district' | 'state' | 'national' = 'district';
+    let queryScopeNote: string | undefined = undefined;
+
+    // Geographic fallback in DB: If district query yields 0 rows, fallback to State level
+    if (total === 0 && resolvedDistrictName && (resolvedStateName || (filter.state && filter.state !== 'all'))) {
+      const stateWhere: string[] = [];
+      const stateParams: any[] = [];
+      let sIdx = 1;
+
+      if (resolvedCommName || filter.commodity) {
+        const c1 = resolvedCommName || filter.commodity!;
+        stateWhere.push(`commodity ILIKE $${sIdx}`);
+        stateParams.push(`%${c1}%`);
+        sIdx++;
+      }
+      const s1 = resolvedStateName || filter.state!;
+      stateWhere.push(`state ILIKE $${sIdx}`);
+      stateParams.push(`%${s1}%`);
+      sIdx++;
+
+      if (filter.dateFrom) {
+        stateWhere.push(`arrival_date >= $${sIdx}`);
+        stateParams.push(filter.dateFrom);
+        sIdx++;
+      }
+      if (filter.dateTo) {
+        stateWhere.push(`arrival_date <= $${sIdx}`);
+        stateParams.push(filter.dateTo);
+        sIdx++;
+      }
+
+      const stateWhereSql = `WHERE ${stateWhere.join(' AND ')}`;
+      const stateCountRes = await db.query(
+        `SELECT COUNT(*) as total FROM market_prices ${stateWhereSql}`,
+        stateParams
+      );
+      const stateTotal = parseInt(stateCountRes.rows[0]?.total || '0', 10);
+      if (stateTotal > 0) {
+        total = stateTotal;
+        whereSql = stateWhereSql;
+        params = stateParams;
+        pIdx = sIdx;
+        queryScope = 'state';
+        queryScopeNote = `No recent arrivals reported specifically for ${resolvedDistrictName}; showing available verified markets in ${resolvedStateName || filter.state}.`;
+      }
+    }
+
+    // If State query also yields 0, check National level
+    if (total === 0 && (resolvedStateName || resolvedDistrictName)) {
+      const natWhere: string[] = [];
+      const natParams: any[] = [];
+      let nIdx = 1;
+
+      if (resolvedCommName || filter.commodity) {
+        const c1 = resolvedCommName || filter.commodity!;
+        natWhere.push(`commodity ILIKE $${nIdx}`);
+        natParams.push(`%${c1}%`);
+        nIdx++;
+      }
+      if (filter.dateFrom) {
+        natWhere.push(`arrival_date >= $${nIdx}`);
+        natParams.push(filter.dateFrom);
+        nIdx++;
+      }
+      if (filter.dateTo) {
+        natWhere.push(`arrival_date <= $${nIdx}`);
+        natParams.push(filter.dateTo);
+        nIdx++;
+      }
+
+      const natWhereSql = natWhere.length > 0 ? `WHERE ${natWhere.join(' AND ')}` : '';
+      const natCountRes = await db.query(
+        `SELECT COUNT(*) as total FROM market_prices ${natWhereSql}`,
+        natParams
+      );
+      const natTotal = parseInt(natCountRes.rows[0]?.total || '0', 10);
+      if (natTotal > 0) {
+        total = natTotal;
+        whereSql = natWhereSql;
+        params = natParams;
+        pIdx = nIdx;
+        queryScope = 'national';
+        queryScopeNote = `No state-level arrivals reported; showing available verified national markets for ${resolvedCommName || filter.commodity}.`;
+      }
+    }
+
     const queryParams = [...params, limit, offset];
     const recordsRes = await db.query(
       `SELECT id, state, district, market_name as market, commodity, variety, grade,
@@ -1862,9 +2155,10 @@ export class MandiService {
     );
 
     const latestSyncRes = await db.query(
-      `SELECT completed_at, status FROM mandi_sync_logs WHERE status = 'success' ORDER BY completed_at DESC LIMIT 1`
+      `SELECT completed_at, status, error_message FROM mandi_sync_logs ORDER BY started_at DESC LIMIT 1`
     );
-    const lastSyncTime = latestSyncRes.rows[0]?.completed_at;
+    const lastSyncLog = latestSyncRes.rows[0];
+    const lastSyncTime = lastSyncLog?.completed_at;
 
     let isStale = false;
     if (lastSyncTime) {
@@ -1903,6 +2197,13 @@ export class MandiService {
         isStale,
         freshnessPolicy: 'Data older than 24 hours is flagged as stale. Real daily arrivals updated via CEDA Agmarknet.',
         cedaApiConfigured: this.isConfigured(),
+        scope: queryScope,
+        scopeNote: queryScopeNote,
+        resolvedCommodity: resolvedCommName ? { id: (await this.resolveCommodity(filter.commodity || ''))?.id, name: resolvedCommName } : undefined,
+        resolvedState: resolvedStateName ? { id: this.resolveState(filter.state)?.stateId, name: resolvedStateName } : undefined,
+        resolvedDistrict: resolvedDistrictName ? { id: (await this.resolveDistrict(filter.district))?.districtId, name: resolvedDistrictName } : undefined,
+        lastUpstreamStatus: this.lastUpstreamInfo.status,
+        lastUpstreamReason: lastSyncLog?.error_message || undefined,
       },
     };
   }
