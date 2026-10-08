@@ -192,7 +192,9 @@ export class MarketService {
       }
     }
 
-    const isCedaConfigured = mandiService.isConfigured();
+    const isConfigured = mandiService.isConfigured();
+    const isDataGovConfigured = mandiService.isDataGovConfigured();
+    const isCedaConfigured = mandiService.isCedaConfigured();
 
     let scope: 'district' | 'state' | 'national' = 'district';
     let scopeNote: string | undefined = undefined;
@@ -235,11 +237,11 @@ export class MarketService {
     let cedaErrorReason: 'auth_failure' | 'rate_limit' | 'network_failure' | 'malformed_response' | 'no_records' | undefined = undefined;
     let cedaErrorMessage: string | undefined = undefined;
 
-    // If no records found, or records are stale, and CEDA API is configured: trigger live sync
-    if ((priceRows.length === 0 || isStale) && isCedaConfigured) {
+    // If no records found, or records are stale, and Mandi intelligence is configured: trigger live sync
+    if ((priceRows.length === 0 || isStale) && isConfigured) {
       try {
-        console.log(`[MarketService] Triggering CEDA fetch for commodity "${targetCrop}" (state: ${targetState || 'All'})...`);
-        const syncRes = await mandiService.syncFromCedaApi({
+        console.log(`[MarketService] Triggering upstream mandi fetch for commodity "${targetCrop}" (state: ${targetState || 'All'})...`);
+        const syncRes = await mandiService.syncFromUpstream({
           commodity: targetCrop,
           state: targetState,
           district: targetDistrict,
@@ -247,7 +249,7 @@ export class MarketService {
 
         if (syncRes.status === 'failed') {
           cedaErrorMessage = syncRes.errorMessage;
-          if (syncRes.errorMessage?.includes('401') || syncRes.errorMessage?.includes('Unauthorized') || syncRes.errorMessage?.includes('CEDA_API_KEY')) {
+          if (syncRes.errorMessage?.includes('401') || syncRes.errorMessage?.includes('Unauthorized') || syncRes.errorMessage?.includes('API_KEY')) {
             cedaErrorReason = 'auth_failure';
           } else if (syncRes.errorMessage?.includes('429') || syncRes.errorMessage?.includes('Too Many Requests')) {
             cedaErrorReason = 'rate_limit';
@@ -277,7 +279,7 @@ export class MarketService {
         }
       } catch (syncErr: any) {
         cedaErrorMessage = syncErr.message;
-        if (syncErr.message?.includes('401') || syncErr.message?.includes('Unauthorized') || syncErr.message?.includes('CEDA_API_KEY')) {
+        if (syncErr.message?.includes('401') || syncErr.message?.includes('Unauthorized') || syncErr.message?.includes('API_KEY')) {
           cedaErrorReason = 'auth_failure';
         } else if (syncErr.message?.includes('429') || syncErr.message?.includes('Too Many Requests') || syncErr.message?.includes('rate limit')) {
           cedaErrorReason = 'rate_limit';
@@ -288,11 +290,11 @@ export class MarketService {
         } else {
           cedaErrorReason = 'network_failure';
         }
-        console.warn(`[MarketService] On-demand CEDA sync error (${cedaErrorReason}):`, syncErr.message);
+        console.warn(`[MarketService] On-demand upstream mandi sync notice (${cedaErrorReason}):`, syncErr.message);
       }
-    } else if (!isCedaConfigured && priceRows.length === 0) {
+    } else if (!isConfigured && priceRows.length === 0) {
       cedaErrorReason = 'auth_failure';
-      cedaErrorMessage = 'CEDA_API_KEY is not configured in backend environment variables.';
+      cedaErrorMessage = 'Neither DATA_GOV_IN_API_KEY nor CEDA_API_KEY is configured in backend environment variables.';
     }
 
     if (priceRows.length === 0 && !cedaErrorReason) {
@@ -300,35 +302,41 @@ export class MarketService {
     }
 
     const apiStatus = {
-      configured: isCedaConfigured,
-      source: isCedaConfigured
+      configured: isConfigured,
+      source: isDataGovConfigured
+        ? 'AGMARKNET / data.gov.in (Primary) & CEDA Agmarknet (Fallback)'
+        : isCedaConfigured
         ? 'CEDA Agmarknet (api.ceda.ashoka.edu.in)'
-        : 'CEDA Agmarknet Agricultural-Market Records (Database Cache)',
-      isLive: isCedaConfigured,
+        : 'CEDA Agmarknet / AGMARKNET Agricultural-Market Records (Database Cache)',
+      primaryProvider: 'AGMARKNET / data.gov.in',
+      fallbackProvider: 'CEDA Agmarknet',
+      dataGovConfigured: isDataGovConfigured,
+      cedaConfigured: isCedaConfigured,
+      isLive: isConfigured,
       isStale,
       scope,
       scopeNote,
       errorReason: cedaErrorReason,
       errorMessage: cedaErrorMessage,
-      ...(isCedaConfigured
-        ? { note: 'Live daily mandi price streaming active via CEDA Agmarknet API.' }
+      ...(isConfigured
+        ? { note: 'Live daily mandi price streaming active via data.gov.in AGMARKNET dataset with CEDA Agmarknet fallback.' }
         : {
-            missingKey: 'CEDA_API_KEY',
-            note: 'Configure CEDA_API_KEY in backend environment to enable live daily mandi streaming.',
+            missingKey: 'DATA_GOV_IN_API_KEY / CEDA_API_KEY',
+            note: 'Configure DATA_GOV_IN_API_KEY or CEDA_API_KEY in backend environment to enable live daily mandi streaming.',
           }),
     };
 
     // 3. ZERO DEMO FALLBACK: If NO verified records exist, return explicit MANDI_DATA_UNAVAILABLE
     if (priceRows.length === 0) {
-      let failureMessage = `No verified APMC market records available for "${cropName}" from CEDA Agmarknet.`;
+      let failureMessage = `No verified APMC market records available for "${cropName}" from AGMARKNET / data.gov.in or CEDA Agmarknet.`;
       if (cedaErrorReason === 'auth_failure') {
-        failureMessage = 'CEDA Agmarknet authentication unconfigured or key rejected.';
+        failureMessage = 'Mandi provider credentials unconfigured or key rejected.';
       } else if (cedaErrorReason === 'rate_limit') {
-        failureMessage = 'CEDA Agmarknet rate limit reached. Please retry in a few moments.';
+        failureMessage = 'Upstream mandi data provider rate limit reached. Please retry in a few moments.';
       } else if (cedaErrorReason === 'network_failure') {
-        failureMessage = 'Network connection to CEDA Agmarknet API is temporarily unreachable.';
+        failureMessage = 'Network connection to mandi API is temporarily unreachable.';
       } else if (cedaErrorReason === 'malformed_response') {
-        failureMessage = 'CEDA Agmarknet returned an invalid response structure.';
+        failureMessage = 'Mandi API returned an invalid response structure.';
       }
 
       const emptyDecision = this.computeSellingDecision({
@@ -703,20 +711,62 @@ export class MarketService {
     // Condition 4: PARTIAL SELL (Balanced approach for medium volatility or large volumes)
     else {
       action = 'PARTIAL_SELL';
-      const sellNowPct = 60;
-      const holdPct = 40;
+
+      // Dynamic split determination:
+      // - High volatility / price divergence (>20% spread or volatilityScore > 60): 50% sell / 50% hold
+      // - High volume (>150 quintals) or strong local realization: 70% sell / 30% hold
+      // - Upward price momentum (trend === 'up'): 40% sell / 60% hold
+      // - Default balanced: 60% sell / 40% hold
+      let sellNowPct = 60;
+      let holdPct = 40;
+
+      if (volatilityRiskScore > 60 || priceSpreadPct > 20) {
+        sellNowPct = 50;
+        holdPct = 50;
+      } else if (quantityQuintals > 150 || (distance <= 25 && effectivePrice >= modalPrice * 0.9)) {
+        sellNowPct = 70;
+        holdPct = 30;
+      } else if (trend === 'up') {
+        sellNowPct = 40;
+        holdPct = 60;
+      }
+
       const sellNowQty = Math.round(quantityQuintals * (sellNowPct / 100));
       const holdQty = quantityQuintals - sellNowQty;
       timeHorizon = `Sell ${sellNowPct}% now, hold ${holdPct}% for 2 weeks`;
       reasons.push(
-        `Selling ${sellNowQty} quintals now secures immediate working capital (estimated ₹${Math.round(effectivePrice * sellNowQty).toLocaleString('en-IN')}).`,
-        `Holding ${holdQty} quintals buffers against market volatility while preserving upside if prices climb.`,
+        `Selling ${sellNowQty} quintals (${sellNowPct}%) now secures immediate working capital (estimated ₹${Math.round(effectivePrice * sellNowQty).toLocaleString('en-IN')}).`,
+        `Holding ${holdQty} quintals (${holdPct}%) buffers against market volatility while preserving upside if prices climb.`,
         'Provides balanced risk management without exposing entire harvest to single-day price fluctuations.'
       );
       suggestedAction = `Dispatch ${sellNowQty} quintals to ${topMarket.name} today and hold ${holdQty} quintals in storage.`;
     }
 
-    const sellNowQty = Math.round(quantityQuintals * 0.6);
+    let finalSellPercent = 60;
+    let finalHoldPercent = 40;
+    if (action === 'SELL_NOW') {
+      finalSellPercent = 100;
+      finalHoldPercent = 0;
+    } else if (action === 'HOLD' || action === 'WAIT') {
+      finalSellPercent = 0;
+      finalHoldPercent = 100;
+    } else if (action === 'PARTIAL_SELL') {
+      if (volatilityRiskScore > 60 || priceSpreadPct > 20) {
+        finalSellPercent = 50;
+        finalHoldPercent = 50;
+      } else if (quantityQuintals > 150 || (distance <= 25 && effectivePrice >= modalPrice * 0.9)) {
+        finalSellPercent = 70;
+        finalHoldPercent = 30;
+      } else if (trend === 'up') {
+        finalSellPercent = 40;
+        finalHoldPercent = 60;
+      } else {
+        finalSellPercent = 60;
+        finalHoldPercent = 40;
+      }
+    }
+
+    const sellNowQty = Math.round(quantityQuintals * (finalSellPercent / 100));
     const holdQty = quantityQuintals - sellNowQty;
     const sellNowReturn = Math.round(effectivePrice * sellNowQty);
     const holdEstimatedReturn = Math.round(effectivePrice * holdQty * 1.05);
@@ -730,8 +780,8 @@ export class MarketService {
       riskScore: overallScore,
       confidence: isStale ? 'medium' : 'high',
       confidenceNote: isStale
-        ? 'Based on recent verified CEDA Agmarknet arrival bulletins (<48h old).'
-        : 'Based on fresh verified CEDA Agmarknet auction settlements.',
+        ? 'Based on recent verified APMC arrival bulletins (<48h old).'
+        : 'Based on fresh verified APMC auction settlements.',
       primaryMarketName: topMarket.name,
       primaryPrice: modalPrice,
       expectedNetReturn: netReturn,
@@ -747,9 +797,9 @@ export class MarketService {
         logisticsRisk: { score: logisticsRiskScore, level: logisticsRiskLevel, note: logisticsRiskNote },
       },
       partialSplit: {
-        sellNowPercent: 60,
+        sellNowPercent: finalSellPercent,
         sellNowQuantity: sellNowQty,
-        holdPercent: 40,
+        holdPercent: finalHoldPercent,
         holdQuantity: holdQty,
         sellNowReturn,
         holdEstimatedReturn,

@@ -19,7 +19,11 @@
     "net_return": "Estimated Net Return",
     "risk": "Risk",
     "demand": "Demand",
-    "why_this": "Why this market?"
+    "why_this": "Why this market?",
+    "how_calculated": "How was this calculated?",
+    "calculation_breakdown": "Transparent Calculation Breakdown",
+    "gross_value": "Gross Produce Value",
+    "formula_explanation": "Net Return = Gross Revenue − (Freight + 2.5% APMC Cess + ₹5/q Handling + 1% Transit Loss). Sourced from real mandi auction data."
   },
   "comparison": {
     "title": "Market Comparison",

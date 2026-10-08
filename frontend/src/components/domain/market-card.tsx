@@ -1,4 +1,5 @@
-import { MapPin, Truck, IndianRupee, TrendingUp, Star } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Truck, IndianRupee, TrendingUp, Star, Calculator, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,13 +18,21 @@ const RISK_BADGE = {
 interface MarketCardProps {
   market: MarketData;
   rank?: number;
+  quantity?: number;
   onWhyClick?: () => void;
   onClick?: () => void;
   className?: string;
 }
 
-function MarketCard({ market, rank, onWhyClick, onClick, className }: MarketCardProps) {
+function MarketCard({ market, rank, quantity = 100, onWhyClick, onClick, className }: MarketCardProps) {
   const { t } = useTranslation('market');
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  const activeQty = quantity || 100;
+  const grossValue = Math.round(market.price * activeQty);
+  const commissionVal = Math.round((grossValue * market.commission) / 100);
+  const loadingVal = market.loadingCost !== undefined ? market.loadingCost : Math.round(5 * activeQty);
+  const wastageVal = Math.round((grossValue * (market.expectedWastage || 1.0)) / 100);
 
   return (
     <Card
@@ -126,6 +135,63 @@ function MarketCard({ market, rank, onWhyClick, onClick, className }: MarketCard
               </div>
               <span className="text-lg font-extrabold text-agri-forest-800">₹{formatIndianNumber(market.netReturn)}</span>
             </div>
+
+            {/* How was this calculated? Expandable Drawer */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowBreakdown(!showBreakdown);
+              }}
+              className="mt-2.5 flex items-center justify-between w-full py-1.5 px-2 text-[11px] font-semibold text-agri-forest-800 bg-sand-100/70 hover:bg-sand-200/70 rounded-md transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <Calculator className="h-3.5 w-3.5 text-agri-forest-700" />
+                {t('card.how_calculated', { defaultValue: 'How was this calculated?' })}
+              </span>
+              <ChevronDown
+                className={cn(
+                  'h-3.5 w-3.5 transition-transform duration-200',
+                  showBreakdown && 'rotate-180'
+                )}
+              />
+            </button>
+
+            {showBreakdown && (
+              <div className="mt-2 p-2.5 bg-sand-50 rounded-lg border border-sand-200 text-[11px] space-y-1.5 animate-fadeIn">
+                <div className="flex justify-between font-semibold text-sand-800 border-b border-sand-200 pb-1">
+                  <span>{t('card.gross_value', { defaultValue: 'Gross Produce Value' })} ({activeQty} q × ₹{formatIndianNumber(market.price)})</span>
+                  <span className="font-mono">₹{formatIndianNumber(grossValue)}</span>
+                </div>
+                <div className="flex justify-between text-risk-red-600">
+                  <span>− {t('card.transport', { defaultValue: 'Transport Freight' })}</span>
+                  <span className="font-mono">−₹{formatIndianNumber(market.transportCost)}</span>
+                </div>
+                <div className="flex justify-between text-risk-red-600">
+                  <span>− {t('card.commission', { defaultValue: 'APMC Cess / Commission' })} ({market.commission}%)</span>
+                  <span className="font-mono">−₹{formatIndianNumber(commissionVal)}</span>
+                </div>
+                {loadingVal > 0 && (
+                  <div className="flex justify-between text-risk-red-600">
+                    <span>− {t('card.loading', { defaultValue: 'Loading / Unloading' })}</span>
+                    <span className="font-mono">−₹{formatIndianNumber(loadingVal)}</span>
+                  </div>
+                )}
+                {wastageVal > 0 && (
+                  <div className="flex justify-between text-risk-red-600">
+                    <span>− {t('card.wastage', { defaultValue: 'Transit Loss / Shrinkage' })} ({market.expectedWastage}%)</span>
+                    <span className="font-mono">−₹{formatIndianNumber(wastageVal)}</span>
+                  </div>
+                )}
+                <div className="border-t border-sand-200 pt-1 flex justify-between font-bold text-agri-forest-800 text-xs">
+                  <span>= {t('card.net_return', { defaultValue: 'Net Realized Return' })}</span>
+                  <span className="font-mono">₹{formatIndianNumber(market.netReturn)}</span>
+                </div>
+                <p className="text-[10px] text-sand-500 italic pt-0.5">
+                  {t('card.formula_explanation', { defaultValue: 'Net Return = Gross Revenue − (Freight + 2.5% APMC Cess + ₹5/q Handling + 1% Transit Loss). Real APMC settlement data.' })}
+                </p>
+              </div>
+            )}
           </div>
 
         {/* Why CTA */}

@@ -1,4 +1,6 @@
 import { db } from '../db/index.js';
+import { dataGovAgmarknetProvider } from './mandi/dataGovAgmarknetProvider.js';
+import { cedaAgmarknetProvider } from './mandi/cedaAgmarknetProvider.js';
 
 export interface CedaCommodity {
   id: number;
@@ -758,8 +760,28 @@ export class MandiService {
     return cleaned !== '' ? cleaned : undefined;
   }
 
+  public getDataGovApiKey(): string | undefined {
+    return dataGovAgmarknetProvider.getApiKey();
+  }
+
+  public isDataGovConfigured(): boolean {
+    return dataGovAgmarknetProvider.isConfigured();
+  }
+
+  public isCedaConfigured(): boolean {
+    return Boolean(this.getApiKey()) || cedaAgmarknetProvider.isConfigured();
+  }
+
   public isConfigured(): boolean {
-    return Boolean(this.getApiKey());
+    return this.isDataGovConfigured() || this.isCedaConfigured();
+  }
+
+  public getPrimaryProviderName(): string {
+    return 'AGMARKNET / data.gov.in';
+  }
+
+  public getFallbackProviderName(): string {
+    return 'CEDA Agmarknet';
   }
 
   /**
@@ -1591,6 +1613,268 @@ export class MandiService {
   }
 
   /**
+   * Ingest, validate, and upsert NormalizedMandiRecord[] from any provider into PostgreSQL
+   */
+  public async ingestNormalizedRecords(records: Array<{
+    state: string;
+    district: string;
+    marketName: string;
+    commodity: string;
+    variety: string;
+    grade: string;
+    arrivalDate: string;
+    minPrice: number;
+    maxPrice: number;
+    modalPrice: number;
+    quantity?: number;
+    source: string;
+  }>): Promise<{
+    insertedCount: number;
+    updatedCount: number;
+    rejectedCount: number;
+  }> {
+    let insertedCount = 0;
+    let updatedCount = 0;
+    let rejectedCount = 0;
+
+    for (const validated of records) {
+      if (!validated || !validated.marketName || !validated.commodity || !validated.modalPrice) {
+        rejectedCount++;
+        continue;
+      }
+
+      try {
+        const existing = await db.query(
+          `SELECT id FROM market_prices
+           WHERE market_name ILIKE $1 AND commodity ILIKE $2 AND variety ILIKE $3 AND arrival_date = $4
+           LIMIT 1`,
+          [validated.marketName, validated.commodity, validated.variety, validated.arrivalDate]
+        );
+
+        if (existing.rows.length > 0) {
+          const id = existing.rows[0].id;
+          await db.query(
+            `UPDATE market_prices
+             SET min_price = $1, max_price = $2, modal_price = $3, price_per_quintal = $4,
+                 quantity = COALESCE($5, quantity), grade = $6, state = $7, district = $8,
+                 source = $9, fetched_at = NOW(), updated_at = NOW()
+             WHERE id = $10`,
+            [
+              validated.minPrice,
+              validated.maxPrice,
+              validated.modalPrice,
+              validated.modalPrice,
+              validated.quantity || null,
+              validated.grade,
+              validated.state,
+              validated.district,
+              validated.source,
+              id,
+            ]
+          );
+          updatedCount++;
+        } else {
+          const newId = `mp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          await db.query(
+            `INSERT INTO market_prices (
+              id, state, district, market_name, commodity, variety, grade,
+              arrival_date, min_price, max_price, modal_price, price_per_quintal,
+              quantity, source, fetched_at, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW(), NOW())`,
+            [
+              newId,
+              validated.state,
+              validated.district,
+              validated.marketName,
+              validated.commodity,
+              validated.variety,
+              validated.grade,
+              validated.arrivalDate,
+              validated.minPrice,
+              validated.maxPrice,
+              validated.modalPrice,
+              validated.modalPrice,
+              validated.quantity || null,
+              validated.source,
+            ]
+          );
+          insertedCount++;
+        }
+      } catch (err) {
+        rejectedCount++;
+      }
+    }
+
+    return { insertedCount, updatedCount, rejectedCount };
+  }
+
+  /**
+   * Synchronize mandi arrivals from Primary (data.gov.in AGMARKNET) or Fallback (CEDA Agmarknet)
+   * Uses per-scope locking and cooldown cache.
+   */
+  public async syncFromUpstream(options?: {
+    state?: string;
+    district?: string;
+    commodity?: string;
+    fromDate?: string;
+    toDate?: string;
+    limit?: number;
+  }): Promise<MandiSyncResult> {
+    const commodityInput = options?.commodity || 'Wheat';
+    const stateInput = options?.state || 'all';
+    const districtInput = options?.district || 'all';
+    const scopeKey = `upstream_${commodityInput.toLowerCase()}_${stateInput.toLowerCase()}_${districtInput.toLowerCase()}`;
+
+    // 1. Check if a sync is already running for this scope
+    if (this.activeSyncPromises.has(scopeKey)) {
+      return this.activeSyncPromises.get(scopeKey)!;
+    }
+
+    // 2. Check cooldown: 15 minutes
+    const lastAttempt = this.lastSyncTimeByScope.get(scopeKey) || 0;
+    if (Date.now() - lastAttempt < this.SCOPE_COOLDOWN_MS) {
+      return {
+        startedAt: new Date(lastAttempt).toISOString(),
+        completedAt: new Date().toISOString(),
+        status: 'success',
+        source: 'Mandi Intelligence Orchestrator (Cooldown Cache)',
+        fetchedCount: 0,
+        insertedCount: 0,
+        updatedCount: 0,
+        rejectedCount: 0,
+      };
+    }
+
+    const syncPromise = this.executeMultiProviderSync(options, scopeKey);
+    this.activeSyncPromises.set(scopeKey, syncPromise);
+
+    try {
+      const result = await syncPromise;
+      if (result.fetchedCount > 0) {
+        this.lastSyncTimeByScope.set(scopeKey, Date.now());
+      } else {
+        this.lastSyncTimeByScope.delete(scopeKey);
+      }
+      return result;
+    } finally {
+      this.activeSyncPromises.delete(scopeKey);
+    }
+  }
+
+  private async executeMultiProviderSync(
+    options: {
+      state?: string;
+      district?: string;
+      commodity?: string;
+      fromDate?: string;
+      toDate?: string;
+      limit?: number;
+    } | undefined,
+    scopeKey: string
+  ): Promise<MandiSyncResult> {
+    const startedAt = new Date().toISOString();
+    const syncId = `sync_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    await db.query(
+      `INSERT INTO mandi_sync_logs (id, started_at, status, source)
+       VALUES ($1, $2, 'running', 'Mandi Intelligence Orchestrator')`,
+      [syncId, startedAt]
+    );
+
+    // 1. PRIMARY PROVIDER: data.gov.in AGMARKNET
+    if (dataGovAgmarknetProvider.isConfigured()) {
+      try {
+        console.log('[MandiService] Querying PRIMARY provider: AGMARKNET / data.gov.in...');
+        const primaryRes = await dataGovAgmarknetProvider.fetchPrices({
+          commodity: options?.commodity,
+          state: options?.state,
+          district: options?.district,
+          fromDate: options?.fromDate,
+          toDate: options?.toDate,
+          limit: options?.limit || 100,
+        });
+
+        if (primaryRes.success && primaryRes.records.length > 0) {
+          console.log(`[MandiService] data.gov.in returned ${primaryRes.records.length} records. Ingesting into PostgreSQL...`);
+          const counts = await this.ingestNormalizedRecords(primaryRes.records);
+          const completedAt = new Date().toISOString();
+
+          await db.query(
+            `UPDATE mandi_sync_logs
+             SET completed_at = $1, status = 'success', source = $2,
+                 fetched_count = $3, inserted_count = $4, updated_count = $5, rejected_count = $6
+             WHERE id = $7`,
+            [
+              completedAt,
+              'AGMARKNET / data.gov.in',
+              primaryRes.records.length,
+              counts.insertedCount,
+              counts.updatedCount,
+              counts.rejectedCount,
+              syncId,
+            ]
+          );
+
+          return {
+            startedAt,
+            completedAt,
+            status: 'success',
+            source: 'AGMARKNET / data.gov.in',
+            fetchedCount: primaryRes.records.length,
+            insertedCount: counts.insertedCount,
+            updatedCount: counts.updatedCount,
+            rejectedCount: counts.rejectedCount,
+          };
+        } else {
+          console.log(`[MandiService] data.gov.in returned 0 records (${primaryRes.error || primaryRes.errorReason || 'no_records'}). Falling back to CEDA Agmarknet...`);
+        }
+      } catch (err: any) {
+        console.warn(`[MandiService] data.gov.in query failed (${err.message}). Falling back to CEDA Agmarknet...`);
+      }
+    } else {
+      console.log('[MandiService] DATA_GOV_IN_API_KEY unconfigured. Checking fallback CEDA Agmarknet...');
+    }
+
+    // 2. FALLBACK PROVIDER: CEDA Agmarknet
+    if (this.isCedaConfigured()) {
+      try {
+        console.log('[MandiService] Querying FALLBACK provider: CEDA Agmarknet...');
+        const cedaResult = await this.executeSync(options, scopeKey);
+        if (cedaResult.fetchedCount > 0 || cedaResult.status === 'success') {
+          return cedaResult;
+        }
+      } catch (err: any) {
+        console.warn('[MandiService] Fallback CEDA Agmarknet query failed:', err.message);
+      }
+    }
+
+    // 3. Neither provider returned records
+    const completedAt = new Date().toISOString();
+    const errorMsg = !dataGovAgmarknetProvider.isConfigured() && !this.isCedaConfigured()
+      ? 'Neither DATA_GOV_IN_API_KEY nor CEDA_API_KEY is configured in backend environment.'
+      : 'No real mandi records found across primary (data.gov.in) and fallback (CEDA) providers.';
+
+    await db.query(
+      `UPDATE mandi_sync_logs
+       SET completed_at = $1, status = 'failed', error_message = $2
+       WHERE id = $3`,
+      [completedAt, errorMsg, syncId]
+    );
+
+    return {
+      startedAt,
+      completedAt,
+      status: 'failed',
+      source: 'Mandi Intelligence Orchestrator',
+      fetchedCount: 0,
+      insertedCount: 0,
+      updatedCount: 0,
+      rejectedCount: 0,
+      errorMessage: errorMsg,
+    };
+  }
+
+  /**
    * Synchronize mandi arrivals from CEDA Agmarknet API into PostgreSQL
    * Uses per-scope locking and 3-tier geographic strategy (District -> State -> National)
    */
@@ -1932,10 +2216,15 @@ export class MandiService {
     };
     metadata: {
       source: string;
+      primaryProvider?: string;
+      fallbackProvider?: string;
+      dataGovConfigured?: boolean;
+      cedaConfigured?: boolean;
       lastFetchedAt?: string;
       isStale: boolean;
       freshnessPolicy: string;
       cedaApiConfigured: boolean;
+      isConfigured?: boolean;
       scope?: 'district' | 'state' | 'national';
       scopeNote?: string;
       resolvedCommodity?: { id?: number; name: string };
@@ -2029,11 +2318,11 @@ export class MandiService {
     );
     let total = parseInt(countRes.rows[0]?.total || '0', 10);
 
-    // On-demand sync: If 0 records exist or stale, and CEDA API is configured, trigger live sync
+    // On-demand sync: If 0 records exist or stale, and either provider is configured, trigger live sync
     if (total === 0 && this.isConfigured()) {
       try {
-        console.log(`[MandiService] getPrices: Triggering on-demand CEDA fetch for commodity "${resolvedCommName || filter.commodity || 'Wheat'}"...`);
-        await this.syncFromCedaApi({
+        console.log(`[MandiService] getPrices: Triggering on-demand upstream fetch for commodity "${resolvedCommName || filter.commodity || 'Wheat'}"...`);
+        await this.syncFromUpstream({
           commodity: resolvedCommName || filter.commodity,
           state: resolvedStateName || filter.state,
           district: resolvedDistrictName || filter.district,
@@ -2192,11 +2481,15 @@ export class MandiService {
         totalPages: Math.ceil(total / limit) || 1,
       },
       metadata: {
-        source: 'CEDA Agmarknet (api.ceda.ashoka.edu.in)',
+        source: 'AGMARKNET / data.gov.in (Primary) / CEDA Agmarknet (Fallback)',
+        primaryProvider: 'AGMARKNET / data.gov.in',
+        fallbackProvider: 'CEDA Agmarknet',
+        dataGovConfigured: this.isDataGovConfigured(),
+        cedaConfigured: this.isCedaConfigured(),
+        cedaApiConfigured: this.isCedaConfigured(),
         lastFetchedAt: lastSyncTime,
         isStale,
-        freshnessPolicy: 'Data older than 24 hours is flagged as stale. Real daily arrivals updated via CEDA Agmarknet.',
-        cedaApiConfigured: this.isConfigured(),
+        freshnessPolicy: 'Data older than 24 hours is flagged as stale. Real daily arrivals updated via data.gov.in & CEDA Agmarknet.',
         scope: queryScope,
         scopeNote: queryScopeNote,
         resolvedCommodity: resolvedCommName ? { id: (await this.resolveCommodity(filter.commodity || ''))?.id, name: resolvedCommName } : undefined,
@@ -2229,12 +2522,19 @@ export class MandiService {
 
     return {
       success: true,
-      cedaApiConfigured: this.isConfigured(),
+      primaryProvider: 'AGMARKNET / data.gov.in',
+      fallbackProvider: 'CEDA Agmarknet',
+      dataGovConfigured: this.isDataGovConfigured(),
+      cedaConfigured: this.isCedaConfigured(),
+      cedaApiConfigured: this.isCedaConfigured(),
+      isConfigured: this.isConfigured(),
       totalStoredPriceRecords: totalPrices,
       totalRecords: totalPrices,
       stale: isStale,
       isStale,
-      source: 'CEDA Agmarknet (api.ceda.ashoka.edu.in)',
+      source: this.isDataGovConfigured()
+        ? 'AGMARKNET / data.gov.in'
+        : 'CEDA Agmarknet (api.ceda.ashoka.edu.in)',
       lastSyncTime,
       syncInProgress: this.activeSyncPromises.size > 0,
       history: res.rows.map((r) => ({

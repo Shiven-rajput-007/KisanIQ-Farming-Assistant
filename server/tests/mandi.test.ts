@@ -1,5 +1,7 @@
 import { mandiService } from '../services/mandiService.js';
 import { marketService } from '../services/marketService.js';
+import { dataGovAgmarknetProvider } from '../services/mandi/dataGovAgmarknetProvider.js';
+import { cedaAgmarknetProvider } from '../services/mandi/cedaAgmarknetProvider.js';
 import { db } from '../db/index.js';
 
 async function runMandiTestSuite() {
@@ -691,10 +693,198 @@ async function runMandiTestSuite() {
     blocked++;
   }
 
+  // -------------------------------------------------------------
+  // Test 27: Primary Provider (data.gov.in AGMARKNET) Normalization & Validation
+  // -------------------------------------------------------------
+  const validDataGovRec = dataGovAgmarknetProvider.validateAndNormalize({
+    state: 'Madhya Pradesh',
+    district: 'Gwalior',
+    market: 'Gwalior APMC',
+    commodity: 'Wheat',
+    variety: 'Lokwan',
+    grade: 'FAQ',
+    arrival_date: '05/10/2026',
+    min_price: '2400',
+    max_price: '2700',
+    modal_price: '2550',
+    arrival_quantity: '120.5',
+  });
+
+  const invertedDataGovRec = dataGovAgmarknetProvider.validateAndNormalize({
+    state: 'Madhya Pradesh',
+    district: 'Gwalior',
+    market: 'Gwalior APMC',
+    commodity: 'Wheat',
+    arrival_date: '05/10/2026',
+    min_price: '2800',
+    max_price: '2500',
+    modal_price: '2600',
+  });
+
+  const outlierDataGovRec = dataGovAgmarknetProvider.validateAndNormalize({
+    state: 'Madhya Pradesh',
+    district: 'Gwalior',
+    market: 'Gwalior APMC',
+    commodity: 'Wheat',
+    arrival_date: '05/10/2026',
+    min_price: '50',
+    max_price: '2500',
+    modal_price: '2000',
+  });
+
+  assert(
+    validDataGovRec !== null &&
+    validDataGovRec.state === 'Madhya Pradesh' &&
+    validDataGovRec.commodity === 'Wheat' &&
+    validDataGovRec.modalPrice === 2550 &&
+    validDataGovRec.minPrice === 2400 &&
+    validDataGovRec.maxPrice === 2700 &&
+    validDataGovRec.arrivalDate === '2026-10-05' &&
+    validDataGovRec.quantity === 120.5 &&
+    validDataGovRec.source === 'AGMARKNET / data.gov.in' &&
+    invertedDataGovRec === null &&
+    outlierDataGovRec === null,
+    27,
+    'Primary Provider (data.gov.in) normalizes valid Indian date & price records and rejects inverted/outlier data'
+  );
+
+  // -------------------------------------------------------------
+  // Test 28: DATA_GOV_IN_API_KEY Sanitization
+  // -------------------------------------------------------------
+  const prevDataGovKey = process.env.DATA_GOV_IN_API_KEY;
+  try {
+    process.env.DATA_GOV_IN_API_KEY = '  "Bearer datagov_api_test_key_999"  ';
+    const cleanedKey = dataGovAgmarknetProvider.getApiKey();
+    assert(
+      cleanedKey === 'datagov_api_test_key_999',
+      28,
+      'DATA_GOV_IN_API_KEY parser strips quotes, trims whitespace, and strips redundant Bearer prefix'
+    );
+  } finally {
+    if (prevDataGovKey !== undefined) {
+      process.env.DATA_GOV_IN_API_KEY = prevDataGovKey;
+    } else {
+      delete process.env.DATA_GOV_IN_API_KEY;
+    }
+  }
+
+  // -------------------------------------------------------------
+  // Test 29: Dynamic Partial Sell Split Engine (Adaptive Hedging)
+  // -------------------------------------------------------------
+  const highVolDecision = marketService.computeSellingDecision({
+    cropName: 'Wheat',
+    quantityQuintals: 100,
+    markets: [
+      { ...dummyMarket, price: 2800, minPrice: 2000, maxPrice: 3000, priceTrend: 'stable' },
+      { ...dummyMarket, id: 'mkt_2', price: 2100, minPrice: 1900, maxPrice: 2200 },
+    ],
+    weatherData: { forecast: [{ rainProbability: 10 }] },
+  });
+
+  const highVolQtyDecision = marketService.computeSellingDecision({
+    cropName: 'Soybean',
+    quantityQuintals: 200,
+    markets: [{ ...dummyMarket, distance: 35, priceTrend: 'stable' }],
+    weatherData: { forecast: [{ rainProbability: 10 }] },
+  });
+
+  assert(
+    highVolDecision.action === 'PARTIAL_SELL' &&
+    highVolDecision.partialSplit?.sellNowPercent === 50 &&
+    highVolDecision.partialSplit?.holdPercent === 50 &&
+    highVolQtyDecision.action === 'PARTIAL_SELL' &&
+    highVolQtyDecision.partialSplit?.sellNowPercent === 70 &&
+    highVolQtyDecision.partialSplit?.holdPercent === 30,
+    29,
+    'Dynamic Partial Sell Split adapts to 50/50 for high volatility/divergence and 70/30 for high volume cash-in'
+  );
+
+  // -------------------------------------------------------------
+  // Test 30: Multi-Crop Multi-Location Generic Mandi Routing
+  // -------------------------------------------------------------
+  const cropsToTest = ['Wheat', 'Rice', 'Soybean', 'Cotton', 'Mustard', 'Gram', 'Onion', 'Potato'];
+  let allCropsResolved = true;
+  for (const crop of cropsToTest) {
+    const res = await mandiService.resolveCommodity(crop);
+    if (!res || !res.id || !res.officialName) {
+      allCropsResolved = false;
+      break;
+    }
+  }
+
+  const statesToTest = ['Madhya Pradesh', 'Maharashtra', 'Uttar Pradesh', 'Punjab', 'Rajasthan', 'Gujarat'];
+  let allStatesResolved = true;
+  for (const st of statesToTest) {
+    const res = mandiService.resolveState(st);
+    if (!res || !res.stateId) {
+      allStatesResolved = false;
+      break;
+    }
+  }
+
+  assert(
+    allCropsResolved && allStatesResolved,
+    30,
+    'Generic multi-crop & multi-state routing resolves without any hardcoding or vendor lock-in'
+  );
+
+  // -------------------------------------------------------------
+  // Test 31: Multi-Provider Ingestion and PostgreSQL Deduplication
+  // -------------------------------------------------------------
+  const testNormRec = {
+    state: 'Maharashtra',
+    district: 'Pune',
+    marketName: 'Pune Gultekdi Mandi',
+    commodity: 'Paddy(Dhan)(Common)',
+    variety: 'Standard',
+    grade: 'FAQ',
+    arrivalDate: '2026-10-06',
+    minPrice: 2200,
+    maxPrice: 2600,
+    modalPrice: 2450,
+    quantity: 300,
+    source: 'AGMARKNET / data.gov.in' as const,
+  };
+
+  const ing1 = await mandiService.ingestNormalizedRecords([testNormRec]);
+  const ing2 = await mandiService.ingestNormalizedRecords([testNormRec]);
+
+  assert(
+    ing1.insertedCount === 1 &&
+    ing2.updatedCount === 1 &&
+    ing2.insertedCount === 0,
+    31,
+    'Multi-provider normalized records are deduplicated and upserted cleanly in PostgreSQL'
+  );
+
+  // -------------------------------------------------------------
+  // Test 32: Live data.gov.in Connection Check (Unfaked)
+  // -------------------------------------------------------------
+  const dataGovKey = dataGovAgmarknetProvider.getApiKey();
+  if (dataGovKey) {
+    try {
+      console.log('  Testing live connection to data.gov.in AGMARKNET API...');
+      const result = await dataGovAgmarknetProvider.fetchPrices({ limit: 5 });
+      if (result.success) {
+        console.log(`  ✅ PASS [Test 32]: data.gov.in Live Connection: Retrieved ${result.records.length} records`);
+        passed++;
+      } else {
+        console.error('  ❌ FAIL [Test 32]: data.gov.in Live Connection error:', result.error);
+        failed++;
+      }
+    } catch (err: any) {
+      console.error('  ❌ FAIL [Test 32]: data.gov.in Live Connection error:', err.message);
+      failed++;
+    }
+  } else {
+    console.log('  ⚠️  [Test 32]: LIVE DATA.GOV.IN TEST BLOCKED — DATA_GOV_IN_API_KEY required (unfaked live test requirement).');
+    blocked++;
+  }
+
   console.log('\n===========================================================');
   console.log(`🎉 TEST SUMMARY: ${passed} PASSED, ${failed} FAILED, ${blocked} BLOCKED`);
   if (blocked > 0) {
-    console.log(`ℹ️  Note: ${blocked} test blocked awaiting CEDA_API_KEY in server/.env (unfaked live test)`);
+    console.log(`ℹ️  Note: ${blocked} test(s) blocked awaiting live API credentials in server/.env (unfaked live test requirement)`);
   }
   console.log('===========================================================\n');
 
